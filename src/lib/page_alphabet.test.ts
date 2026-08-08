@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, it } from 'vitest'
 import { renderBrailleText } from './sample'
 import { runScan } from './cv/pipeline'
 
