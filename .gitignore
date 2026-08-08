@@ -1,0 +1,34 @@
+# ---- Node / Vite (PWA) ----
+node_modules/
+dist/
+*.tsbuildinfo
+dev-server*.log
+*.local
+
+# ---- Python (server) ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+server/.venv/
+server/weights/*.pth
+server/weights/*.onnx
+server/logs/
+server/.env
+server/runs/
+.pytest_cache/
+
+# ---- Flutter (app) ----
+app/.dart_tool/
+app/build/
+app/.flutter-plugins*
+app/.packages
+app/android/.gradle/
+app/android/local.properties
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

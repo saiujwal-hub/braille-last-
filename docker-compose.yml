@@ -1,0 +1,21 @@
+# Run the whole OCR + TTS server on your LAN, fully offline.
+#
+#   docker compose up -d
+#   # app connects to http://<this-host>:8000
+#
+# Model weights are mounted from ./server/weights (download once with
+# server/scripts/download_models.py, then the server never needs the internet).
+services:
+  server:
+    build: ./server
+    container_name: braille-bridge-server
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./server/weights:/srv/weights:ro
+      - ./server/logs:/srv/logs
+    env_file:
+      - ./server/.env.example
+    environment:
+      BB_PRELOAD: "true"
+    restart: unless-stopped
