@@ -89,4 +89,8 @@ describe('offline sentence repair', () => {
     const result = readingFor(shiftedDownMasks, 'en')
     expect(result.text.toLowerCase()).toBe('after using backspace')
   })
+
+  it('repairs delete UI terms', () => {
+    expect(repairUnknownEnglishWords('after using delec')).toBe('after using delete')
+  })
 })

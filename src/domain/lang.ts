@@ -45,7 +45,7 @@ const DOLCH_WORDS = [
   // the offline consensus reader resolve single-dot disagreements in real words
   // without needing a network language model.
   'app','apps','area','backspace','backspaces','behavior','behaviour','braille','browser','button','buttons',
-  'chrome','close','closed','common','cortana','cursor','desktop','dialog','dialogue',
+  'chrome','close','closed','common','cortana','cursor','delete','deleted','deleting','desktop','dialog','dialogue',
   'file','files','folder','folders','grid','hello','icon','icons','jaws','keyboard',
   'laptop','line','link','list','lists','menu','mode','notepad','notification','notifications',
   'nvda','open','opened','page','phone','pin','pinned','program','programs','reader','replace',
@@ -61,7 +61,7 @@ const PROPER_NOUNS = new Set(['cortana', 'chrome', 'jaws', 'nvda', 'braille', 'w
 
 const UI_TERMS = new Set<string>([
   'app','apps','area','backspace','backspaces','behavior','behaviour','braille','browser','button','buttons',
-  'chrome','close','closed','common','cortana','cursor','desktop','dialog','dialogue',
+  'chrome','close','closed','common','cortana','cursor','delete','deleted','deleting','desktop','dialog','dialogue',
   'file','files','folder','folders','grid','hello','icon','icons','jaws','keyboard',
   'laptop','line','link','list','lists','menu','mode','notepad','notification','notifications',
   'nvda','open','opened','page','phone','pin','pinned','program','programs','reader','replace',
