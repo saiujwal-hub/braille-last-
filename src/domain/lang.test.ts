@@ -114,6 +114,12 @@ describe('offline sentence repair', () => {
     expect(repairUnknownEnglishWords('Care? symbol')).toBe('Caret symbol')
   })
 
+  it('preserves and repairs Backslash terms', () => {
+    expect(repairUnknownEnglishWords('Backslash')).toBe('Backslash')
+    expect(repairUnknownEnglishWords('Backslas?')).toBe('Backslash')
+    expect(repairUnknownEnglishWords('Backsla??')).toBe('Backslash')
+  })
+
   it('splits invalid apostrophe-merged words', () => {
     expect(repairUnknownEnglishWords("again'enter")).toBe('again enter')
     expect(repairUnknownEnglishWords("don't they're")).toBe("don't they're")

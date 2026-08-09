@@ -337,7 +337,7 @@ export function repairUnknownEnglishWords(text: string): string {
 }
 
 function editDistance(a: string, b: string): number {
-  if (Math.abs(a.length - b.length) > 1) return 99
+  if (Math.abs(a.length - b.length) > 2) return 99
   let previous = Array.from({ length: b.length + 1 }, (_, index) => index)
   for (let i = 1; i <= a.length; i++) {
     const current = [i]
