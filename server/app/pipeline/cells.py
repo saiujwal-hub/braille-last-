@@ -34,9 +34,9 @@ def _dot_centroids(binary: np.ndarray, min_area: int = 4, max_area: int = 900) -
         y = int(stats[i, cv2.CC_STAT_TOP])
         w = int(stats[i, cv2.CC_STAT_WIDTH])
         h = int(stats[i, cv2.CC_STAT_HEIGHT])
-        # Ignore blobs in the top 5% or bottom 8% of the image to filter out paper edges and camera watermarks
+        # Ignore blobs in the top 5% or bottom 8% of the image to filter out paper edges and camera watermarks (only on full-sized photos)
         cy = y + h / 2.0
-        if cy < h_img * 0.05 or cy > h_img * 0.92:
+        if h_img >= 450 and (cy < h_img * 0.05 or cy > h_img * 0.92):
             continue
         # Dot shape check: roughly round.
         if w > 3 * h or h > 3 * w:
