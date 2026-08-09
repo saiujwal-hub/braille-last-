@@ -279,6 +279,7 @@ export function buildGridAtAngle(dots: Dot[], g: number, rad: number): Grid | nu
       }
     }
   }
+  console.log('colCells', colCells.map(c => ({ start: c.start, gap: c.right ? c.right.center - c.left.center : null })))
 
   // Cell-to-cell pitch P: sweep the plausible range and keep the pitch that
   // makes the most observed column-start pairs land on (nearly) integer
@@ -333,15 +334,47 @@ export function buildGridAtAngle(dots: Dot[], g: number, rad: number): Grid | nu
     if (!changed) break
     origin = medianOff(snapped)
   }
+
+  // console.log('P before regression:', P)
+  // Refine P and origin using linear regression on (k, s) pairs
+  // to prevent pitch error from accumulating across long lines.
+  if (snapped.length > 1) {
+    const n = snapped.length
+    const sumK = snapped.reduce((acc, x) => acc + x.k, 0)
+    const sumS = snapped.reduce((acc, x) => acc + x.s, 0)
+    const sumK2 = snapped.reduce((acc, x) => acc + x.k * x.k, 0)
+    const sumKS = snapped.reduce((acc, x) => acc + x.k * x.s, 0)
+    const denom = n * sumK2 - sumK * sumK
+    if (denom !== 0) {
+      P = (n * sumKS - sumK * sumS) / denom
+      origin = (sumS - P * sumK) / n
+    }
+  }
+  // console.log('P after regression:', P)
+
+  // Re-snap all columns with the refined P and origin
+  for (const x of snapped) {
+    x.k = Math.round((x.s - origin) / P)
+  }
+
   const kMin = Math.min(...snapped.map((x) => x.k))
   const kMax = Math.max(...snapped.map((x) => x.k))
+  // console.log('kMin:', kMin, 'kMax:', kMax)
   const byK = new Map<number, ColCell>()
-  for (const x of snapped) if (!byK.has(x.k)) byK.set(x.k, colCells[x.idx])
+  for (const x of snapped) {
+    // Keep the one closest to the ideal lattice point
+    const ideal = origin + x.k * P
+    const existing = byK.get(x.k)
+    if (!existing || Math.abs(x.s - ideal) < Math.abs(existing.start - ideal)) {
+      byK.set(x.k, colCells[x.idx])
+    }
+  }
   const slots: ColSlot[] = []
-  for (let k = kMin; k <= kMax; k++) {
-    const start = origin + k * P
+  for (let k = kMin - 1; k <= kMax + 1; k++) {
     const real = byK.get(k) ?? null
-    slots.push({ start, rightX: real && real.right ? real.right.center : start + g, real })
+    const start = real ? real.start : origin + k * P
+    const rightX = real && real.right ? real.right.center : start + g
+    slots.push({ start, rightX, real })
   }
 
   // Group rows into cell lines by inter-line gaps (> 1.5 * g)
