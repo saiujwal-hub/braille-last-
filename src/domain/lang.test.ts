@@ -123,4 +123,8 @@ describe('offline sentence repair', () => {
   it('repairs vertical bar UI terms', () => {
     expect(repairUnknownEnglishWords('verticla bar')).toBe('vertical bar')
   })
+
+  it('repairs special symbols UI terms', () => {
+    expect(repairUnknownEnglishWords('specail symbol')).toBe('special symbol')
+  })
 })
