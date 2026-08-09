@@ -24,10 +24,10 @@ opencv-python>=4.9
 numpy>=1.26
 Pillow>=10.3
 
-# --- Optional heavy ML (commented out by default so the server boots without a GPU) ---
-# ultralytics>=8.2
-# torch>=2.2
-# torchvision>=0.17
+# --- Optional heavy ML ---
+ultralytics>=8.2
+torch>=2.2
+torchvision>=0.17
 # realesrgan>=0.3.0
 # basicsr>=1.4.2
 

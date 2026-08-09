@@ -189,7 +189,7 @@ export function buildGrid(dots: Dot[]): Grid | null {
     // fake rows and cells. A valid Braille lattice is the most compact layout
     // that explains the dots; residual only breaks ties between equally sized
     // layouts.
-    const score = grid.cells.length * 1_000_000 + gridResidual(grid)
+    const score = grid.cells.length * 10 + gridResidual(grid)
     if (score < best.score) {
       best.score = score
       best.grid = grid
@@ -210,7 +210,7 @@ export function buildGrid(dots: Dot[]): Grid | null {
       const rad = best.rad + d
       const grid = buildGridAtAngle(dots, g, rad)
       if (!grid) continue
-      const score = grid.cells.length * 1_000_000 + gridResidual(grid)
+      const score = grid.cells.length * 10 + gridResidual(grid)
       if (score < best.score) {
         best.score = score
         best.grid = grid

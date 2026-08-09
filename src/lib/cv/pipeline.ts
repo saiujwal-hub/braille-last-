@@ -65,7 +65,7 @@ export function runScan(id: number, rgba: Uint8ClampedArray, w: number, h: numbe
 
     // ---- Grayscale + sharpness guard ---------------------------------------
     const grayRaw = toGray(data, width, height)
-    const gray = flattenIllumination(grayRaw, Math.max(12, Math.min(width, height) * 0.08))
+    const gray = flattenIllumination(grayRaw, Math.max(5, Math.min(width, height) * 0.08))
     const sharp = sharpnessScore(gray)
     const reblur = sharpnessScore(boxBlur(gray, 2))
     const blurRatio = sharp / Math.max(1e-6, reblur)
@@ -82,7 +82,7 @@ export function runScan(id: number, rgba: Uint8ClampedArray, w: number, h: numbe
     // have 25-35px embossed dots, where the old 4.5% window split a single
     // dot into a bright rim and dark shadow.  A 12% window preserves the
     // complete relief signature while still removing page-level lighting.
-    const bgRadius = Math.max(12, Math.min(width, height) * 0.12)
+    const bgRadius = Math.max(6, Math.min(width, height) * 0.045)
     const lc = localContrast(gray, bgRadius)
     const minDim = Math.min(width, height)
     const dotsOut = detectDots(gray, lc, minDim)

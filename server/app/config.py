@@ -14,6 +14,29 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 
+def load_env_file() -> None:
+    env_path = Path(__file__).resolve().parent.parent / ".env"
+    if env_path.exists():
+        try:
+            for line in env_path.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" in line:
+                    key, val = line.split("=", 1)
+                    key = key.strip()
+                    val = val.strip()
+                    if val.startswith(('"', "'")) and val.endswith(val[0]):
+                        val = val[1:-1]
+                    if key and key not in os.environ:
+                        os.environ[key] = val
+        except Exception:
+            pass
+
+
+load_env_file()
+
+
 def _env(name: str, default: str) -> str:
     return os.environ.get(name, default)
 

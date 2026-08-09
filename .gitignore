@@ -11,8 +11,7 @@ __pycache__/
 .venv/
 venv/
 server/.venv/
-server/weights/*.pth
-server/weights/*.onnx
+server/weights/
 server/logs/
 server/.env
 server/runs/
@@ -32,3 +31,4 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+dsbi/

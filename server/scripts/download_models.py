@@ -24,7 +24,7 @@ from pathlib import Path
 WEIGHTS_DIR = Path(__file__).resolve().parent.parent / "weights"
 
 URLS = {
-    "esrgan": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x4plus.pth",
+    "esrgan": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth",
     "esrgan-tiny": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesr-general-x4v3.pth",
     "sam": "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth",
     "yolo-base": "https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8n.pt",

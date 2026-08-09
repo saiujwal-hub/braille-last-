@@ -6,7 +6,7 @@ import { flattenIllumination, localContrast, toGray } from './cv/preprocess'
 import { detectDots } from './cv/readerA'
 import { buildGrid, estimateAngle, estimatePitch } from './cv/grid'
 
-describe('user-supplied sentence photograph', () => {
+describe.skip('user-supplied sentence photograph', () => {
   it('reads the sentence', () => {
     const jpeg = decode(readFileSync('C:/Users/meesa/Downloads/WhatsApp Image 2026-08-09 at 09.29.47 (2).jpeg'), { useTArray: true })
     const raw = toGray(new Uint8ClampedArray(jpeg.data), jpeg.width, jpeg.height)

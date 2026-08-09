@@ -158,11 +158,16 @@ function editDistance(a: string, b: string): number {
     const current = [i]
     let rowMin = current[0]
     for (let j = 1; j <= b.length; j++) {
-      const value = Math.min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
+      const isMatch = a[i - 1] === b[j - 1] || a[i - 1] === '?' || b[j - 1] === '?'
+      const value = Math.min(
+        previous[j] + 1,
+        current[j - 1] + 1,
+        previous[j - 1] + (isMatch ? 0 : 1)
+      )
       current.push(value)
       rowMin = Math.min(rowMin, value)
     }
-    if (rowMin > 1) return 2
+    if (rowMin > 2) return 99
     previous = current
   }
   return previous[b.length]
