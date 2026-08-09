@@ -98,4 +98,21 @@ describe('offline sentence repair', () => {
     expect(repairUnknownEnglishWords("again'enter")).toBe('again enter')
     expect(repairUnknownEnglishWords("don't they're")).toBe("don't they're")
   })
+
+  it('scores digits favorably and recovers numeric shift', () => {
+    // Correct masks for "#1"
+    const correct = [60, 1]
+    // Shifted down:
+    const shiftedDown = correct.map(m => {
+      let shifted = 0
+      if (m & (1 << 0)) shifted |= 1 << 1
+      if (m & (1 << 1)) shifted |= 1 << 2
+      if (m & (1 << 3)) shifted |= 1 << 4
+      if (m & (1 << 4)) shifted |= 1 << 5
+      return shifted
+    })
+    const result = readingFor(shiftedDown, 'en')
+    // Should prefer the shifted-up version (translates to ":1") over the shifted-down "?,"
+    expect(result.text).toContain('1')
+  })
 })

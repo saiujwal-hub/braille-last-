@@ -124,7 +124,7 @@ export function scoreEnglishSequence(seq: string): number {
   }
   let letterCount = 0
   for (const ch of lower) {
-    if (ch >= 'a' && ch <= 'z') letterCount++
+    if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')) letterCount++
     else if (ch !== ' ') unknown++
   }
   const avgBigram = bigramCount > 0 ? bigramSum / bigramCount : 0
@@ -158,6 +158,8 @@ export function readingFor(masks: readonly DotMask[], lang: BrailleLang): Scored
     if (m & (1 << 2)) shifted |= 1 << 1 // dot 3 -> dot 2
     if (m & (1 << 4)) shifted |= 1 << 3 // dot 5 -> dot 4
     if (m & (1 << 5)) shifted |= 1 << 4 // dot 6 -> dot 5
+    // Reconstruct NUMBER_SIGN (60) if shifted-up mask is dots 4-5 (24)
+    if (shifted === 24) shifted = 60
     return shifted
   })
   const shiftedUp = getScored(shiftedUpMasks)
@@ -169,6 +171,8 @@ export function readingFor(masks: readonly DotMask[], lang: BrailleLang): Scored
     if (m & (1 << 1)) shifted |= 1 << 2 // dot 2 -> dot 3
     if (m & (1 << 3)) shifted |= 1 << 4 // dot 4 -> dot 5
     if (m & (1 << 4)) shifted |= 1 << 5 // dot 5 -> dot 6
+    // Reconstruct NUMBER_SIGN (60) if shifted-down mask is dots 3-5-6 (52)
+    if (shifted === 52) shifted = 60
     return shifted
   })
   const shiftedDown = getScored(shiftedDownMasks)
