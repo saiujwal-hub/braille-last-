@@ -146,7 +146,7 @@ def _pair_x_centers(centers: list[float], tol: float) -> list[tuple[float, float
     i = 0
     while i < len(centers) - 1:
         gap = centers[i + 1] - centers[i]
-        if gap <= 2.6 * tol:  # within-cell pair
+        if gap <= 2.4 * tol:  # within-cell pair
             pairs.append((centers[i], centers[i + 1]))
             i += 2
         else:
