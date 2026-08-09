@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { runConsensus, type CellInput } from './consensus'
 import { maskFromDots } from './cell'
+import { translateMasks } from './tables'
 
 const BOX = { x: 0, y: 0, w: 10, h: 10 }
 
@@ -55,5 +56,20 @@ describe('consensus engine', () => {
     const out = runConsensus([cell(x, z)], 'en')
     expect(out.results[0].status).toBe('uncertain')
     expect(out.results[0].alternatives.length).toBeGreaterThan(0)
+  })
+
+  it('uses the offline word list to resolve a one-dot reading disagreement', () => {
+    // Reader B sees the standard Grade-1 spelling of "jaws" while Reader A
+    // misses dot 4 in j/w/s, a common raised-dot photo failure mode.
+    const out = runConsensus(
+      [
+        cell(18, 26, 0, 0),
+        cell(1, 1, 0, 1),
+        cell(18, 58, 0, 2),
+        cell(6, 14, 0, 3),
+      ],
+      'en',
+    )
+    expect(translateMasks(out.masks, 'en').text).toBe('jaws')
   })
 })

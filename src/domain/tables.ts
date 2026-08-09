@@ -155,13 +155,17 @@ export function translateMasks(masks: readonly DotMask[], lang: BrailleLang): { 
     if (m === CONTROL.CAPITAL_SIGN) {
       const next = masks[i + 1]
       const nch = next !== undefined ? table.forward[next] : undefined
-      if (nch) {
+      if (nch && /^[a-z]$/i.test(nch)) {
         cells.push('^')
         text += nch.toUpperCase()
         cells.push(nch)
         i++
       } else {
         cells.push('^')
+        // Keep a private marker for the sentence repairer. If the following
+        // cell is unreadable but can be repaired to a dictionary word, its
+        // initial letter must retain this capital sign.
+        text += '\u0001'
       }
       continue
     }

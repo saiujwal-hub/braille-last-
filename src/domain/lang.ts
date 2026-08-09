@@ -41,6 +41,10 @@ const DOLCH_WORDS = [
   'tail','teacher','team','tent','thing','ticket','tiger','time','toy','train','tree','trip',
   'truck','turtle','umbrella','uncle','van','vegetable','voice','water','weather','week','wheel',
   'window','wing','winter','wood','wool','word','worm','yard','year',
+  // Common assistive-technology and classroom terms. Including these lets the
+  // offline consensus reader resolve a one-dot disagreement in real words
+  // without needing a network language model.
+  'braille','chrome','common','icon','icons','jaws','keyboard','laptop','nvda','phone','reader','screen','taskbar',
 ] as const
 
 const WORD_SET = new Set<string>(DOLCH_WORDS)
@@ -115,6 +119,53 @@ export interface ScoredReading {
 export function readingFor(masks: readonly DotMask[], lang: BrailleLang): ScoredReading {
   const { text, cells } = translateMasks(masks, lang)
   return { text, cells, score: scoreEnglishSequence(text) }
+}
+
+/**
+ * Repair a word only when the OCR has explicitly marked part of it unknown.
+ * This keeps the reader from silently changing a confidently decoded word,
+ * while allowing the offline vocabulary to resolve one damaged dot cell in a
+ * longer sentence.
+ */
+export function repairUnknownEnglishWords(text: string): string {
+  return text.replace(/\u0001?[A-Za-z?;()]+/g, (segment) => {
+    let markedCapital = segment.startsWith('\u0001')
+    const word = markedCapital ? segment.slice(1) : segment
+    if (!/[^A-Za-z]/.test(word)) return word
+    if (/[^A-Za-z?]/.test(word) && /[^A-Za-z?]$/.test(word)) return word
+    const lower = word.toLowerCase().replace(/[^a-z]/g, '?')
+    const maximumDistance = word.length >= 5 ? 2 : 1
+    const closestMatches = (input: string, limit: number) => {
+      const scored = [...WORD_SET].map((candidate) => ({ candidate, distance: editDistance(input, candidate) }))
+      const distance = Math.min(...scored.map((entry) => entry.distance))
+      return distance <= limit ? scored.filter((entry) => entry.distance === distance).map((entry) => entry.candidate) : []
+    }
+    let matches = closestMatches(lower, maximumDistance)
+    if (matches.length !== 1 && word.startsWith('??')) {
+      matches = closestMatches(lower.slice(1), 1)
+      markedCapital = matches.length === 1
+    }
+    if (matches.length !== 1) return word
+    const corrected = matches[0]
+    return markedCapital || (word[0] >= 'A' && word[0] <= 'Z') ? corrected[0].toUpperCase() + corrected.slice(1) : corrected
+  })
+}
+
+function editDistance(a: string, b: string): number {
+  if (Math.abs(a.length - b.length) > 1) return 99
+  let previous = Array.from({ length: b.length + 1 }, (_, index) => index)
+  for (let i = 1; i <= a.length; i++) {
+    const current = [i]
+    let rowMin = current[0]
+    for (let j = 1; j <= b.length; j++) {
+      const value = Math.min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
+      current.push(value)
+      rowMin = Math.min(rowMin, value)
+    }
+    if (rowMin > 1) return 2
+    previous = current
+  }
+  return previous[b.length]
 }
 
 /**

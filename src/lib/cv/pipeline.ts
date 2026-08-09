@@ -7,8 +7,8 @@ import { detectDots } from './readerA'
 import { buildGrid } from './grid'
 import { readerBRead } from './readerB'
 import { runConsensus, autoOrient, type CellInput, type CellResult } from '../../domain/consensus'
-import { translateMasks, type BrailleLang } from '../../domain/tables'
-import { mirrorMask } from '../../domain/lang'
+import { CONTROL, translateMasks, type BrailleLang } from '../../domain/tables'
+import { mirrorMask, repairUnknownEnglishWords } from '../../domain/lang'
 import { type DotMask } from '../../domain/cell'
 
 export type PipelineErrorCode = 'blurry' | 'not-braille' | 'decode' | 'timeout' | 'too-few-dots'
@@ -47,12 +47,18 @@ export interface ScanFail {
 export type ScanOutcome = ScanOk | ScanFail
 
 const MAX_DIM = 1400
+const MAX_PROCESSING_PIXELS = 2_000_000
 const DISPLAY_MAX_DIM = 900
 
 export function runScan(id: number, rgba: Uint8ClampedArray, w: number, h: number, language: BrailleLang): ScanOutcome {
   try {
     // ---- Downscale to a bounded processing size ----------------------------
-    const { data, width, height } = downscale(rgba, w, h, MAX_DIM)
+    // A close horizontal crop can be wider than MAX_DIM while containing far
+    // fewer pixels than a normal phone photo. Resizing it changes the small
+    // Braille dot geometry enough to corrupt line reconstruction, so bound by
+    // total work as well as the longest edge.
+    const source = w * h <= MAX_PROCESSING_PIXELS ? { data: rgba, width: w, height: h } : downscale(rgba, w, h, MAX_DIM)
+    const { data, width, height } = source
     if (width < 60 || height < 60) {
       return fail(id, 'decode', 'This image is too small. Please use a higher-resolution photo.')
     }
@@ -63,12 +69,20 @@ export function runScan(id: number, rgba: Uint8ClampedArray, w: number, h: numbe
     const sharp = sharpnessScore(gray)
     const reblur = sharpnessScore(boxBlur(gray, 2))
     const blurRatio = sharp / Math.max(1e-6, reblur)
-    if (sharp < 1.0 || blurRatio < 2.0) {
+    // A close crop of embossed Braille has a deliberately smooth paper
+    // background, so a ratio-only Laplacian gate mistakes it for a blurred
+    // photo. Reject only images that are genuinely featureless on both
+    // measures; the dot readers below still reject non-Braille images.
+    if (sharp < 0.45 && blurRatio < 1.25) {
       return fail(id, 'blurry', 'This photo looks blurry. Hold the camera steady and try again.')
     }
 
     // ---- Local contrast + dot detection ------------------------------------
-    const bgRadius = Math.max(6, Math.min(width, height) * 0.045)
+    // The illumination window must be wider than a dot.  Phone close-ups can
+    // have 25-35px embossed dots, where the old 4.5% window split a single
+    // dot into a bright rim and dark shadow.  A 12% window preserves the
+    // complete relief signature while still removing page-level lighting.
+    const bgRadius = Math.max(12, Math.min(width, height) * 0.12)
     const lc = localContrast(gray, bgRadius)
     const minDim = Math.min(width, height)
     const dotsOut = detectDots(gray, lc, minDim)
@@ -182,7 +196,24 @@ function buildText(results: CellResult[], lang: BrailleLang): string {
   }
   if (cur.length) lines.push(cur)
   return lines
-    .map((masks) => translateMasks(masks, lang).text.replace(/[\s]+$/, ''))
+    .map((masks) => {
+      // A lattice is intentionally reconstructed one cell beyond sparse dot
+      // evidence. At a cropped image edge that can create an empty cell which
+      // is not a real word space. Keep genuine internal spaces, but discard
+      // only these extrapolated edge cells before translating.
+      let first = 0
+      let last = masks.length
+      const hadLeadingEmpty = masks[first] === 0
+      while (first < last && masks[first] === 0) first++
+      // A cropped fragment can leave one isolated dot-6 cell before the
+      // actual word. It looks like a capital sign, but is not attached to the
+      // word when an extrapolated empty cell precedes it. Ignore only that
+      // edge artefact; a genuine capital sign at the beginning is preserved.
+      if (hadLeadingEmpty && masks[first] === CONTROL.CAPITAL_SIGN) first++
+      while (last > first && masks[last - 1] === 0) last--
+      const translated = translateMasks(masks.slice(first, last), lang).text.replace(/[\s]+$/, '')
+      return lang === 'en' ? repairUnknownEnglishWords(translated) : translated
+    })
     .join('\n')
 }
 

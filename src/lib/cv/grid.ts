@@ -51,27 +51,30 @@ export function estimatePitch(dots: Dot[]): number {
 
   if (dots.length === 1) return estFromR
 
-  const components: number[] = []
+  // Use actual centre-to-centre distances. The old implementation collected
+  // dx and dy independently, so a slightly tilted long line contributed many
+  // tiny y drifts and those were mistaken for the dot pitch. This made a
+  // sentence grid rotate wildly and fabricate thousands of cells.
+  const distances: number[] = []
   for (let i = 0; i < dots.length; i++) {
     for (let j = i + 1; j < dots.length; j++) {
-      const dx = Math.abs(dots[i].x - dots[j].x)
-      const dy = Math.abs(dots[i].y - dots[j].y)
-      if (dx > 5) components.push(dx)
-      if (dy > 5) components.push(dy)
+      const distance = Math.hypot(dots[i].x - dots[j].x, dots[i].y - dots[j].y)
+      if (distance > 1) distances.push(distance)
     }
   }
 
-  if (components.length === 0) return estFromR
-  components.sort((a, b) => a - b)
+  if (distances.length === 0) return estFromR
+  distances.sort((a, b) => a - b)
 
-  for (const c of components) {
-    if (c >= 1.5 * medR && c <= 5.0 * medR) {
-      return c
-    }
-    if (c > 5.0 * medR && c <= 9.0 * medR) {
-      const half = c / 2
-      if (half >= 1.5 * medR && half <= 5.0 * medR) return half
-    }
+  const plausible = distances.filter((distance) => distance >= 2.8 * medR && distance <= 5.4 * medR)
+  if (plausible.length) {
+    // The detected blob radius gives a stable scale prior. Choose the real
+    // spacing closest to that prior instead of the first (smallest) distance:
+    // tiny highlight fragments or skewed near-neighbours otherwise shrink the
+    // entire lattice on long photographs.
+    return plausible.reduce((best, distance) =>
+      Math.abs(distance - estFromR) < Math.abs(best - estFromR) ? distance : best,
+    )
   }
 
   return estFromR
@@ -79,6 +82,27 @@ export function estimatePitch(dots: Dot[]): number {
 
 /** Dominant row-axis angle (degrees, mod 90), from NN vector histogram. */
 export function estimateAngle(dots: Dot[], g: number): number {
+  // Long phone photos are commonly tilted by only a few degrees. Estimate
+  // that row direction directly from horizontally-dominant dot pairs before
+  // the local 0/90-degree histogram below. The local method is susceptible to
+  // vertical dot pairs in a sparse sentence and can under-correct the tilt,
+  // causing every physical row to split into many fake rows.
+  const rowAngles: number[] = []
+  for (let i = 0; i < dots.length; i++) {
+    for (let j = i + 1; j < dots.length; j++) {
+      const dx = dots[j].x - dots[i].x
+      const dy = dots[j].y - dots[i].y
+      const distance = Math.hypot(dx, dy)
+      if (Math.abs(dx) < 3 * Math.abs(dy) || distance < 0.75 * g || distance > 8 * g) continue
+      rowAngles.push((Math.atan2(dy, dx) * 180) / Math.PI)
+    }
+  }
+  if (rowAngles.length >= 5) {
+    rowAngles.sort((a, b) => a - b)
+    const mid = rowAngles.length >> 1
+    return rowAngles.length % 2 === 1 ? rowAngles[mid] : (rowAngles[mid - 1] + rowAngles[mid]) / 2
+  }
+
   // Fold into [0, 90) because the grid axis is un-oriented: 0 and 180 are the
   // same line direction, as are 90 and 270.
   const bins = new Float32Array(18)
@@ -148,17 +172,24 @@ export function buildGrid(dots: Dot[]): Grid | null {
   // magnitude.
   const best = { rad: rad0, grid: null as Grid | null, score: Infinity }
 
-  // Coarse sweep over both signs and a window around the folded estimate.
+  // Coarse sweep across plausible phone-camera tilts. The image's row-angle
+  // estimate is only a hint: a sparse sentence can make it drift by several
+  // degrees, which previously kept the true horizontal layout out of the
+  // candidate set entirely.
   const candidates: number[] = []
-  for (const base of [rad0, -rad0]) {
-    for (let d = -3.0; d <= 3.0; d += 0.25) {
-      candidates.push(base + (d * Math.PI) / 180)
-    }
+  for (let deg = -18; deg <= 18; deg += 0.5) {
+    candidates.push((deg * Math.PI) / 180)
   }
+  candidates.push(rad0, -rad0)
   for (const rad of candidates) {
     const grid = buildGridAtAngle(dots, g, rad)
     if (!grid) continue
-    const score = gridResidual(grid)
+    // Every dot is assigned to its nearest theoretical position, so a wrong
+    // tilt can falsely reduce residual by splitting one text line into many
+    // fake rows and cells. A valid Braille lattice is the most compact layout
+    // that explains the dots; residual only breaks ties between equally sized
+    // layouts.
+    const score = grid.cells.length * 1_000_000 + gridResidual(grid)
     if (score < best.score) {
       best.score = score
       best.grid = grid
@@ -179,7 +210,7 @@ export function buildGrid(dots: Dot[]): Grid | null {
       const rad = best.rad + d
       const grid = buildGridAtAngle(dots, g, rad)
       if (!grid) continue
-      const score = gridResidual(grid)
+      const score = grid.cells.length * 1_000_000 + gridResidual(grid)
       if (score < best.score) {
         best.score = score
         best.grid = grid

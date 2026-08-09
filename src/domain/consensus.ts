@@ -1,5 +1,5 @@
 import { type DotMask } from './cell'
-import { TABLES, isKnownMask, type BrailleLang } from './tables'
+import { CONTROL, TABLES, isKnownMask, type BrailleLang } from './tables'
 import { mirrorMask, readingFor, tieBreak } from './lang'
 
 export type CellStatus = 'high' | 'tie' | 'uncertain'
@@ -91,6 +91,37 @@ export function runConsensus(cells: CellInput[], lang: BrailleLang, opts: Consen
 
   let inverted = 0
 
+  // Several faint dots can be missed in the same short word. Resolving each
+  // cell separately then gets stuck: ":a:s" never looks English, while the
+  // combined Reader-B alternatives spell "jaws". For a bounded number of
+  // disagreements, evaluate the complete set of A/B readings together. This
+  // is still deterministic and local (at most 2^12 candidates), and leaves
+  // large/ambiguous pages on the existing per-cell path.
+  const conflictList = [...conflicts]
+  if (conflictList.length > 1 && conflictList.length <= 12) {
+    const base = decisions.slice()
+    let best = base
+    let bestScore = readingFor(base, lang).score
+    for (let bits = 1; bits < 1 << conflictList.length; bits++) {
+      const candidate = base.slice()
+      for (let bit = 0; bit < conflictList.length; bit++) {
+        if (bits & (1 << bit)) {
+          const index = conflictList[bit]
+          candidate[index] = cells[index].readerB as DotMask
+        }
+      }
+      const score = readingFor(candidate, lang).score
+      if (score > bestScore) {
+        best = candidate
+        bestScore = score
+      }
+    }
+    for (let i = 0; i < decisions.length; i++) {
+      if (decisions[i] !== best[i]) inverted++
+      decisions[i] = best[i]
+    }
+  }
+
   for (let pass = 0; pass < 2; pass++) {
     for (const i of conflicts) {
       const c = cells[i]
@@ -121,6 +152,16 @@ export function runConsensus(cells: CellInput[], lang: BrailleLang, opts: Consen
       statuses[i] = 'tie'
     } else {
       statuses[i] = 'uncertain'
+    }
+  }
+
+  // A capital marker is a single faint dot and is commonly missed by the
+  // blob reader. When the template reader sees it directly before a letter,
+  // prefer that marker over an otherwise unexplained empty cell.
+  for (let i = 0; i < cells.length - 1; i++) {
+    if (cells[i].readerA === 0 && cells[i].readerB === CONTROL.CAPITAL_SIGN && decisions[i + 1] !== 0) {
+      decisions[i] = CONTROL.CAPITAL_SIGN
+      statuses[i] = 'tie'
     }
   }
 
