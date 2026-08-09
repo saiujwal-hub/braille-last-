@@ -119,4 +119,8 @@ describe('offline sentence repair', () => {
   it('repairs grave accent UI terms', () => {
     expect(repairUnknownEnglishWords('Grave accen')).toBe('Grave accent')
   })
+
+  it('repairs vertical bar UI terms', () => {
+    expect(repairUnknownEnglishWords('verticla bar')).toBe('vertical bar')
+  })
 })
