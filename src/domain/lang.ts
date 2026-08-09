@@ -46,7 +46,7 @@ const DOLCH_WORDS = [
   // without needing a network language model.
   'accent','accents','app','apps','area','asterisk','backspace','backspaces','backslash','bar','bars','behavior','behaviour','bracket','brackets','braille','browser','button','buttons',
   '0','1','2','3','4','5','6','7','8','9',
-  'chrome','close','closed','colon','comma','common','cortana','cursor','dash','delete','deleted','deleting','desktop','dialog','dialogue','double',
+  'chrome','close','closed','colon','comma','common','cortana','cursor','dash','delete','deleted','deleting','desktop','dialog','dialogue','dollar','dollars','cent','cents','currency','money','cash','coin','coins','amount','price','cost','total','double',
   'equals','file','files','folder','folders','grave','grid','hello','hyphen','icon','icons','jaws','keyboard',
   'laptop','line','link','list','lists','menu','minus','mode','notepad','notification','notifications',
   'nvda','open','opened','page','parenthesis','parentheses','period','phone','pin','pinned','plus','program','programs','quote','quotes','reader','replace',
@@ -62,7 +62,7 @@ const PROPER_NOUNS = new Set(['cortana', 'chrome', 'jaws', 'nvda', 'braille', 'w
 
 const UI_TERMS = new Set<string>([
   'accent','accents','app','apps','area','asterisk','backspace','backspaces','backslash','bar','bars','behavior','behaviour','bracket','brackets','braille','browser','button','buttons',
-  'chrome','close','closed','colon','comma','common','cortana','cursor','dash','delete','deleted','deleting','desktop','dialog','dialogue','double',
+  'chrome','close','closed','colon','comma','common','cortana','cursor','dash','delete','deleted','deleting','desktop','dialog','dialogue','dollar','dollars','cent','cents','currency','money','cash','coin','coins','amount','price','cost','total','double',
   'equals','file','files','folder','folders','grave','grid','hello','hyphen','icon','icons','jaws','keyboard',
   'laptop','line','link','list','lists','menu','minus','mode','notepad','notification','notifications',
   'nvda','open','opened','page','parenthesis','parentheses','period','phone','pin','pinned','plus','program','programs','quote','quotes','reader','replace',

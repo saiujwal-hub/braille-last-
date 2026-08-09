@@ -94,6 +94,11 @@ describe('offline sentence repair', () => {
     expect(repairUnknownEnglishWords('after using delec')).toBe('after using delete')
   })
 
+  it('preserves and repairs Dollar currency terms', () => {
+    expect(repairUnknownEnglishWords('Dollar')).toBe('Dollar')
+    expect(repairUnknownEnglishWords('Dolla?')).toBe('Dollar')
+  })
+
   it('splits invalid apostrophe-merged words', () => {
     expect(repairUnknownEnglishWords("again'enter")).toBe('again enter')
     expect(repairUnknownEnglishWords("don't they're")).toBe("don't they're")
