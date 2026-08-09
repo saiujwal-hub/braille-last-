@@ -210,6 +210,10 @@ function buildText(results: CellResult[], lang: BrailleLang): string {
       // word when an extrapolated empty cell precedes it. Ignore only that
       // edge artefact; a genuine capital sign at the beginning is preserved.
       if (hadLeadingEmpty && masks[first] === CONTROL.CAPITAL_SIGN) first++
+      if (last - first >= 2 && masks[last - 2] === 0) {
+        const mask = masks[last - 1]
+        if (mask !== 0 && (mask & (mask - 1)) === 0) last--
+      }
       while (last > first && masks[last - 1] === 0) last--
       const translated = translateMasks(masks.slice(first, last), lang).text.replace(/[\s]+$/, '')
       return lang === 'en' ? repairUnknownEnglishWords(translated) : translated
