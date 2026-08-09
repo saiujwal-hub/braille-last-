@@ -9,4 +9,8 @@ describe('offline sentence repair', () => {
   it('keeps normal sentence punctuation unchanged', () => {
     expect(repairUnknownEnglishWords('hello, world')).toBe('hello, world')
   })
+
+  it('repairs leading quote to capital letter and trims trailing isolated a/i', () => {
+    expect(repairUnknownEnglishWords("'type here to search a")).toBe('Type here to search')
+  })
 })

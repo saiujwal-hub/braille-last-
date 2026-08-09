@@ -44,7 +44,7 @@ const DOLCH_WORDS = [
   // Common assistive-technology, desktop, and UI terms. Including these lets
   // the offline consensus reader resolve single-dot disagreements in real words
   // without needing a network language model.
-  'app','apps','behavior','behaviour','braille','button','chrome','close','closed','common','cursor','desktop','file','files','folder','folders','grid','home','icon','icons','jaws','keyboard','laptop','line','list','lists','menu','mode','notepad','nvda','open','opened','page','phone','pin','pinned','program','programs','reader','scan','screen','settings','show','start','taskbar','text','view','views','window','windows',
+  'app','apps','behavior','behaviour','braille','button','chrome','close','closed','common','cursor','desktop','file','files','folder','folders','grid','home','icon','icons','jaws','keyboard','laptop','line','list','lists','menu','mode','notepad','nvda','open','opened','page','phone','pin','pinned','program','programs','reader','scan','screen','search','searched','searching','settings','show','start','taskbar','text','type','types','view','views','window','windows',
 ] as const
 
 const WORD_SET = new Set<string>(DOLCH_WORDS)
@@ -131,7 +131,16 @@ export function readingFor(masks: readonly DotMask[], lang: BrailleLang): Scored
  * OCR misreads (such as "Ope e" -> "Open and").
  */
 export function repairUnknownEnglishWords(text: string): string {
-  return text.replace(/\u0001?[A-Za-z?;()]+/g, (segment) => {
+  let repaired = text.replace(/(?:^|\s)'([a-z])/ig, (match, letter) => {
+    const prefix = match.startsWith(' ') ? ' ' : ''
+    return prefix + letter.toUpperCase()
+  })
+
+  if (/\s[ai]$/i.test(repaired)) {
+    repaired = repaired.replace(/\s[ai]$/i, '')
+  }
+
+  return repaired.replace(/\u0001?[A-Za-z?;()]+/g, (segment) => {
     let markedCapital = segment.startsWith('\u0001')
     const word = markedCapital ? segment.slice(1) : segment
     if (!/[^A-Za-z]/.test(word)) {
