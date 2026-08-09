@@ -21,4 +21,18 @@ describe('offline sentence repair', () => {
   it('does not collapse are and a when not at word boundary forming a known word', () => {
     expect(repairUnknownEnglishWords('they are a team')).toBe('they are a team')
   })
+
+  it('repairs damaged assistive UI terms like Dialog and Webpage', () => {
+    expect(repairUnknownEnglishWords('Find and Replace Di?log Box')).toBe('Find and Replace Dialog Box')
+    expect(repairUnknownEnglishWords('Webpa?e Ope?ed in Chrome')).toBe('Webpage Opened in Chrome')
+    expect(repairUnknownEnglishWords('Jeafage Opened in Chrome')).toBe('Webpage Opened in Chrome')
+  })
+
+  it('repairs Windows taskbar terms: search, cortana, button', () => {
+    // Per-token path: '??ertana' = real OCR output when braille cells for 'Co'
+    // are unrecognised (capital-sign + c both become unknown-cell glyphs).
+    // Distance from '?ertana' (after slicing one ?) to 'cortana' is 1; unique match.
+    expect(repairUnknownEnglishWords('start button, seaoch and talk to ??ertana button'))
+      .toBe('start button, search and talk to Cortana button')
+  })
 })

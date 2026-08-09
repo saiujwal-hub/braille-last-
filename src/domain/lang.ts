@@ -44,8 +44,19 @@ const DOLCH_WORDS = [
   // Common assistive-technology, desktop, and UI terms. Including these lets
   // the offline consensus reader resolve single-dot disagreements in real words
   // without needing a network language model.
-  'app','apps','area','behavior','behaviour','braille','button','chrome','close','closed','common','cursor','desktop','file','files','folder','folders','grid','home','icon','icons','jaws','keyboard','laptop','line','list','lists','menu','mode','notepad','notification','notifications','nvda','open','opened','page','phone','pin','pinned','program','programs','reader','scan','screen','search','searched','searching','settings','show','start','taskbar','text','toolbar','tray','type','types','view','views','window','windows',
+  'app','apps','area','behavior','behaviour','braille','browser','button','buttons',
+  'chrome','close','closed','common','cortana','cursor','desktop','dialog','dialogue',
+  'file','files','folder','folders','grid','hello','icon','icons','jaws','keyboard',
+  'laptop','line','link','list','lists','menu','mode','notepad','notification','notifications',
+  'nvda','open','opened','page','phone','pin','pinned','program','programs','reader','replace',
+  'scan','screen','search','searched','searching','settings','show','tab','talk','taskbar',
+  'text','toolbar','tray','type','types','url','view','views','webpage','website','window',
+  'windows','world',
 ] as const
+
+/** Words that should always appear capitalised when auto-repaired (brand names, etc.). */
+const PROPER_NOUNS = new Set(['cortana', 'chrome', 'jaws', 'nvda', 'braille', 'windows'])
+
 
 const WORD_SET = new Set<string>(DOLCH_WORDS)
 
@@ -85,12 +96,8 @@ export function scoreEnglishSequence(seq: string): number {
   let bigramCount = 0
   let unknown = 0
   let wordCount = 0
-  let invalidWordCount = 0
   for (const t of lower.split(/[^a-z]+/)) {
-    if (t) {
-      if (WORD_SET.has(t) || t === 'a' || t === 'i') wordCount++
-      else invalidWordCount++
-    }
+    if (t && WORD_SET.has(t)) wordCount++
   }
   for (let i = 0; i < lower.length - 1; i++) {
     const a = lower[i]
@@ -106,8 +113,8 @@ export function scoreEnglishSequence(seq: string): number {
     else if (ch !== ' ') unknown++
   }
   const avgBigram = bigramCount > 0 ? bigramSum / bigramCount : 0
-  // Dictionary words are strong evidence; non-dictionary words penalize.
-  return wordCount * 3 - invalidWordCount * 1.5 + letterCount * 0.5 + avgBigram * 0.4 - unknown * 1.5
+  // Dictionary words are strong evidence; letters add baseline confidence; unknown characters penalize.
+  return wordCount * 3 + letterCount * 0.5 + avgBigram * 0.4 - unknown * 1.5
 }
 
 export interface ScoredReading {
@@ -127,8 +134,13 @@ export function readingFor(masks: readonly DotMask[], lang: BrailleLang): Scored
 
 /**
  * Repair a word when it contains an unknown cell or is not a recognized word.
- * This keeps the reader from altering confident valid words while repairing
- * OCR misreads (such as "Ope e" -> "Open and").
+ *
+ * Four sequential steps:
+ *  1. Convert leading apostrophe (misread capital sign) to capital letter.
+ *  2. Merge "word a/i" pairs that form a known word at end-of-line.
+ *  3. Trim trailing isolated a/i edge artifact.
+ *  4a. Per-token fuzzy repair (skips ≤ 2-char unknown fragments for the merge pass).
+ *  4b. Merge adjacent short unknown fragments (catches OCR spurious-space splits).
  */
 export function repairUnknownEnglishWords(text: string): string {
   // Step 1: Strip a leading apostrophe (misread capital sign) before the first letter.
@@ -140,8 +152,6 @@ export function repairUnknownEnglishWords(text: string): string {
   // Step 2: Merge "word a" or "word i" pairs into a known combined word,
   // but ONLY when the a/i is the very last token on its line.
   // e.g. "Notification are a" -> "Notification area"
-  // The grid reconstruction can insert a spurious space inside a word when a
-  // cell boundary falls at the image edge.
   repaired = repaired.replace(/\b([A-Za-z]{2,})\s([ai])(\n|$)/gi, (match, w1, w2, tail) => {
     const combined = (w1 + w2).toLowerCase()
     if (WORD_SET.has(combined)) {
@@ -151,42 +161,85 @@ export function repairUnknownEnglishWords(text: string): string {
     return match
   })
 
-  // Step 3: Trim a trailing isolated 'a' or 'i' that could not be merged (edge artifact).
+  // Step 3: Trim a trailing isolated 'a' or 'i' that could not be merged.
   repaired = repaired.replace(/\s[ai]$/i, '')
 
-  return repaired.replace(/\u0001?[A-Za-z?;()]+/g, (segment) => {
+  const fuzzyMatch = (lower: string): string[] => {
+    const maxDist = lower.length >= 6 ? 3 : lower.length >= 4 ? 2 : 1
+    const scored = [...WORD_SET].map((c) => ({ c, d: editDistance(lower, c) }))
+    const minDist = Math.min(...scored.map((e) => e.d))
+    return minDist <= maxDist ? scored.filter((e) => e.d === minDist).map((e) => e.c) : []
+  }
+
+  const applyCorrection = (corrected: string, originalWord: string, markedCapital: boolean): string => {
+    const cap = markedCapital || (originalWord[0] >= 'A' && originalWord[0] <= 'Z') || PROPER_NOUNS.has(corrected)
+    return cap ? corrected[0].toUpperCase() + corrected.slice(1) : corrected
+  }
+
+  // Step 4a: Per-token fuzzy repair.
+  // Short (≤ 2 char) unknown fragments are preserved for the merge pass (step 4b).
+  let result = repaired.replace(/\u0001?[A-Za-z?;()]+/g, (segment) => {
     let markedCapital = segment.startsWith('\u0001')
     const word = markedCapital ? segment.slice(1) : segment
     if (!/[^A-Za-z]/.test(word)) {
       const lower = word.toLowerCase()
       if (WORD_SET.has(lower) || lower === 'a' || lower === 'i') return word
-      // Do not expand single valid letters (e.g. 's', 't', 'w') into 2-letter words ('so', 'to', 'we')
+      // Do not expand single valid letters into 2-letter words ('s' -> 'so', etc.)
       if (word.length === 1 && lower !== 'e') return word
     }
     if (/[^A-Za-z?]/.test(word) && /[^A-Za-z?]$/.test(word)) return word
     const lower = word.toLowerCase().replace(/[^a-z]/g, '?')
-    const maximumDistance = word.length >= 5 ? 2 : 1
-    const closestMatches = (input: string, limit: number) => {
-      const scored = [...WORD_SET].map((candidate) => ({ candidate, distance: editDistance(input, candidate) }))
-      const distance = Math.min(...scored.map((entry) => entry.distance))
-      return distance <= limit ? scored.filter((entry) => entry.distance === distance).map((entry) => entry.candidate) : []
-    }
-    let matches = closestMatches(lower, maximumDistance)
+    if (WORD_SET.has(lower)) return segment
+    // Special case: a lone 'e' is a braille OCR artifact for 'and'
+    if (lower === 'e' && word.length === 1) return 'and'
+    // Preserve very short unknown fragments for the merge pass
+    if (word.length <= 2) return segment
+    let matches = fuzzyMatch(lower)
+    // Prefix tiebreaker: if multiple matches share minimum distance, prefer prefix
     if (matches.length > 1) {
-      const prefixMatches = matches.filter((c) => c.startsWith(lower))
+      const prefixMatches = matches.filter((c) => c.startsWith(lower.replace(/\?/g, '')))
       if (prefixMatches.length === 1) matches = prefixMatches
     }
     if (matches.length !== 1 && word.startsWith('??')) {
-      matches = closestMatches(lower.slice(1), 1)
+      matches = fuzzyMatch(lower.slice(1))
       markedCapital = matches.length === 1
     }
-    if (matches.length !== 1 && lower === 'e') {
-      matches = ['and']
-    }
-    if (matches.length !== 1) return word
-    const corrected = matches[0]
-    return markedCapital || (word[0] >= 'A' && word[0] <= 'Z') ? corrected[0].toUpperCase() + corrected.slice(1) : corrected
+    if (matches.length !== 1 && lower === 'e') matches = ['and']
+    if (matches.length !== 1) return segment
+    return applyCorrection(matches[0], word, markedCapital)
   })
+
+  // Step 4b: Merge adjacent short unknown fragments separated by a single space.
+  // OCR sometimes inserts a spurious gap inside a single Braille word, splitting
+  // e.g. '??ertana' into 'or?b ga'. Uses token iteration so no token is skipped.
+  const tokens = result.split(' ')
+  const merged: string[] = []
+  let i = 0
+  while (i < tokens.length) {
+    const tok = tokens[i]
+    const lA = tok.toLowerCase().replace(/[^a-z]/g, '?')
+    if (
+      i + 1 < tokens.length &&
+      tok.length >= 2 && tok.length <= 5 &&
+      !WORD_SET.has(lA)
+    ) {
+      const next = tokens[i + 1]
+      const lB = next.toLowerCase().replace(/[^a-z]/g, '?')
+      if (next.length >= 2 && next.length <= 5 && !WORD_SET.has(lB)) {
+        const combined = lA + lB
+        const matches = fuzzyMatch(combined)
+        if (matches.length === 1) {
+          merged.push(applyCorrection(matches[0], tok, false))
+          i += 2
+          continue
+        }
+      }
+    }
+    merged.push(tok)
+    i++
+  }
+
+  return merged.join(' ')
 }
 
 function editDistance(a: string, b: string): number {
@@ -205,7 +258,7 @@ function editDistance(a: string, b: string): number {
       current.push(value)
       rowMin = Math.min(rowMin, value)
     }
-    if (rowMin > 2) return 99
+    if (rowMin > 3) return 99
     previous = current
   }
   return previous[b.length]
