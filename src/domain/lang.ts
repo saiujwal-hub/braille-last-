@@ -45,6 +45,7 @@ const DOLCH_WORDS = [
   // the offline consensus reader resolve single-dot disagreements in real words
   // without needing a network language model.
   'app','apps','area','backspace','backspaces','behavior','behaviour','braille','browser','button','buttons',
+  '0','1','2','3','4','5','6','7','8','9',
   'chrome','close','closed','common','cortana','cursor','delete','deleted','deleting','desktop','dialog','dialogue',
   'file','files','folder','folders','grid','hello','icon','icons','jaws','keyboard',
   'laptop','line','link','list','lists','menu','mode','notepad','notification','notifications',
@@ -111,7 +112,7 @@ export function scoreEnglishSequence(seq: string): number {
   let bigramCount = 0
   let unknown = 0
   let wordCount = 0
-  for (const t of lower.split(/[^a-z]+/)) {
+  for (const t of lower.split(/[^a-z0-9]+/)) {
     if (t && WORD_SET.has(t)) wordCount++
   }
   for (let i = 0; i < lower.length - 1; i++) {
