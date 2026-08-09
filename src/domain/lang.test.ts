@@ -93,4 +93,9 @@ describe('offline sentence repair', () => {
   it('repairs delete UI terms', () => {
     expect(repairUnknownEnglishWords('after using delec')).toBe('after using delete')
   })
+
+  it('splits invalid apostrophe-merged words', () => {
+    expect(repairUnknownEnglishWords("again'enter")).toBe('again enter')
+    expect(repairUnknownEnglishWords("don't they're")).toBe("don't they're")
+  })
 })

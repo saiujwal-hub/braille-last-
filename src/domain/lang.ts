@@ -202,6 +202,16 @@ export function repairUnknownEnglishWords(text: string): string {
     return prefix + letter.toUpperCase()
   })
 
+  // Step 1.5: Replace any invalid apostrophe between two words (misread space) with a space.
+  repaired = repaired.replace(/\b([A-Za-z]+)'([A-Za-z]+)\b/g, (match, w1, w2) => {
+    const lowerW2 = w2.toLowerCase()
+    const contractionEndings = /^(?:s|d|ll|re|ve|m|t|clock|all)$/
+    if (!contractionEndings.test(lowerW2)) {
+      return w1 + ' ' + w2
+    }
+    return match
+  })
+
   // Step 2: Merge "word a" or "word i" pairs into a known combined word,
   // but ONLY when the a/i is the very last token on its line.
   // e.g. "Notification are a" -> "Notification area"
