@@ -30,8 +30,8 @@ export function detectDots(g: GrayImage, lc: Float32Array, minDim: number): Read
     const blobs: Blob[] = []
     for (const c of comps) {
       const blob = blobFromComponent(c, g.w, g.h, lc)
-      // Ignore blobs in the top 5% or bottom 8% of the image to filter out paper edges and camera watermarks (only on full-sized photos)
-      if (g.h >= 450 && (blob.cy < g.h * 0.05 || blob.cy > g.h * 0.92)) continue
+      // Ignore blobs in the top 5% or bottom 8% of the image to filter out paper edges and camera watermarks
+      if (blob.cy < g.h * 0.05 || blob.cy > g.h * 0.92) continue
       // Dots have strong local contrast relative to the noise floor; paper
       // grain and threshold noise are weak and get filtered out here.
       if (blob.area < 6 || blob.circularity < 0.4 || blob.strength < 2.5 * t) continue

@@ -43,6 +43,7 @@ function cluster1D(members: { x: number; y: number; idx: number }[], gap: number
   return clusters
 }
 
+/** Median nearest-neighbour distance = intra-cell dot pitch estimate. */
 export function estimatePitch(dots: Dot[]): number {
   if (dots.length < 1) return 0
   const medR = median(dots.map((d) => d.radius))
@@ -50,23 +51,33 @@ export function estimatePitch(dots: Dot[]): number {
 
   if (dots.length === 1) return estFromR
 
-  // Collect centre-to-centre distances
+  // Use actual centre-to-centre distances. The old implementation collected
+  // dx and dy independently, so a slightly tilted long line contributed many
+  // tiny y drifts and those were mistaken for the dot pitch. This made a
+  // sentence grid rotate wildly and fabricate thousands of cells.
   const distances: number[] = []
   for (let i = 0; i < dots.length; i++) {
     for (let j = i + 1; j < dots.length; j++) {
       const distance = Math.hypot(dots[i].x - dots[j].x, dots[i].y - dots[j].y)
-      if (distance > 5.0) distances.push(distance)
+      if (distance > 1) distances.push(distance)
     }
   }
 
   if (distances.length === 0) return estFromR
   distances.sort((a, b) => a - b)
 
-  // Take the median of the smallest 15% of distances. This represents the intra-cell dot pitch g,
-  // which is extremely clean and stable regardless of blob-radius variations.
-  const numNearest = Math.max(2, Math.floor(distances.length * 0.15))
-  const nearestDistances = distances.slice(0, numNearest)
-  return median(nearestDistances)
+  const plausible = distances.filter((distance) => distance >= 2.8 * medR && distance <= 5.4 * medR)
+  if (plausible.length) {
+    // The detected blob radius gives a stable scale prior. Choose the real
+    // spacing closest to that prior instead of the first (smallest) distance:
+    // tiny highlight fragments or skewed near-neighbours otherwise shrink the
+    // entire lattice on long photographs.
+    return plausible.reduce((best, distance) =>
+      Math.abs(distance - estFromR) < Math.abs(best - estFromR) ? distance : best,
+    )
+  }
+
+  return estFromR
 }
 
 /** Dominant row-axis angle (degrees, mod 90), from NN vector histogram. */
