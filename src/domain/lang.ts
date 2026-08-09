@@ -51,7 +51,9 @@ const DOLCH_WORDS = [
   'nvda','open','opened','page','phone','pin','pinned','program','programs','reader','replace',
   'scan','screen','search','searched','searching','settings','show','tab','talk','taskbar',
   'text','toolbar','tray','type','types','typing','url','view','views','webpage','website','window',
-  'windows','world','insert','inserting',
+  'windows','world','insert','inserting','arrow','arrows','left','right','up','down','key','keys',
+  'use','uses','using','used','press','pressing','pressed','select','selecting','selection',
+  'selected','enter','space','escape','control','shift','alt',
 ] as const
 
 /** Words that should always appear capitalised when auto-repaired (brand names, etc.). */
