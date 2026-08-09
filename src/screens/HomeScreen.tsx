@@ -37,9 +37,12 @@ export function HomeScreen() {
   return (
     <main className="screen home">
       <header className="hero">
-        <h1 className="hero__title">Braille <span>Bridge</span></h1>
+        <p className="eyebrow">Braille Bridge · on-device OCR</p>
+        <h1 className="hero__title">
+          Two lines in. <span>Real words out.</span>
+        </h1>
         <p className="hero__tag">
-          Turn handwritten slate-and-stylus Braille into text your eyes can read — on-device, offline, and fully
+          Turn handwritten slate-and-stylus Braille into text your students can read — on-device, offline, and fully
           explainable.
         </p>
       </header>

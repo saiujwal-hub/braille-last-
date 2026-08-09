@@ -1,0 +1,55 @@
+/* Base primitives shared by all landing prototypes. Each page scopes its own
+   palette via CSS variables set on the page root; these rules only consume them. */
+
+.bb-row {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: calc(var(--bb-cell, 26px) * 0.55);
+  align-items: center;
+}
+
+.bb-cell {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(3, 1fr);
+  gap: calc(var(--bb-cell, 26px) * 0.28);
+  width: var(--bb-cell, 26px);
+  height: calc(var(--bb-cell, 26px) * 1.5);
+}
+
+.bb-dot {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--bb-dot-off, rgba(127, 127, 127, 0.5));
+}
+
+.bb-dot.on {
+  background: var(--bb-dot-on, #222);
+}
+
+/* Scroll reveal (driven by shared.tsx IntersectionObserver). */
+.rev {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rev.is {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rev {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

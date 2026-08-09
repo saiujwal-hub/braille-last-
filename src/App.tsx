@@ -6,6 +6,7 @@ import { ResultScreen } from './screens/ResultScreen'
 import { HistoryScreen } from './screens/HistoryScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { ReaderAnimation } from './components/ReaderAnimation'
+import { Landing } from './landing/landing'
 
 function Shell() {
   const navigate = useNavigate()
@@ -14,12 +15,7 @@ function Shell() {
       <div className="app">
         <header className="topbar">
           <NavLink to="/" className="brand">
-            <span className="brand__mark" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-            </span>
-            Braille Bridge
+            <img className="brand__logo" src="/braille_logo.png" alt="Braille Bridge" width={1774} height={230} />
           </NavLink>
           <nav className="nav" aria-label="Primary">
             <NavLink to="/" end className={({ isActive }) => (isActive ? 'nav__link is-active' : 'nav__link')}>
@@ -38,7 +34,9 @@ function Shell() {
         </header>
 
         <Routes>
-          <Route path="/" element={<HomeScreen />} />
+          {/* dashboard */}
+          <Route path="/dashboard" element={<HomeScreen />} />
+          {/* the app */}
           <Route path="/scan" element={<ScanScreen />} />
           <Route path="/result" element={<ResultScreen />} />
           <Route path="/history" element={<HistoryScreen />} />
@@ -66,7 +64,12 @@ export default function App() {
   return (
     <AppProvider>
       <HashRouter>
-        <Shell />
+        <Routes>
+          {/* the landing page */}
+          <Route path="/" element={<Landing />} />
+          {/* everything else is the app */}
+          <Route path="/*" element={<Shell />} />
+        </Routes>
       </HashRouter>
     </AppProvider>
   )
