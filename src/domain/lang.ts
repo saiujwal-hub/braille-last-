@@ -41,10 +41,10 @@ const DOLCH_WORDS = [
   'tail','teacher','team','tent','thing','ticket','tiger','time','toy','train','tree','trip',
   'truck','turtle','umbrella','uncle','van','vegetable','voice','water','weather','week','wheel',
   'window','wing','winter','wood','wool','word','worm','yard','year',
-  // Common assistive-technology and classroom terms. Including these lets the
-  // offline consensus reader resolve a one-dot disagreement in real words
+  // Common assistive-technology, desktop, and UI terms. Including these lets
+  // the offline consensus reader resolve single-dot disagreements in real words
   // without needing a network language model.
-  'braille','chrome','common','cursor','behavior','behaviour','icon','icons','jaws','keyboard','laptop','list','lists','menu','notepad','nvda','phone','reader','screen','taskbar','view','views',
+  'app','apps','behavior','behaviour','braille','button','chrome','close','closed','common','cursor','desktop','file','files','folder','folders','grid','home','icon','icons','jaws','keyboard','laptop','line','list','lists','menu','mode','notepad','nvda','open','opened','page','phone','pin','pinned','program','programs','reader','scan','screen','settings','show','start','taskbar','text','view','views','window','windows',
 ] as const
 
 const WORD_SET = new Set<string>(DOLCH_WORDS)
@@ -85,8 +85,12 @@ export function scoreEnglishSequence(seq: string): number {
   let bigramCount = 0
   let unknown = 0
   let wordCount = 0
+  let invalidWordCount = 0
   for (const t of lower.split(/[^a-z]+/)) {
-    if (t && WORD_SET.has(t)) wordCount++
+    if (t) {
+      if (WORD_SET.has(t) || t === 'a' || t === 'i') wordCount++
+      else invalidWordCount++
+    }
   }
   for (let i = 0; i < lower.length - 1; i++) {
     const a = lower[i]
@@ -102,8 +106,8 @@ export function scoreEnglishSequence(seq: string): number {
     else if (ch !== ' ') unknown++
   }
   const avgBigram = bigramCount > 0 ? bigramSum / bigramCount : 0
-  // Dictionary words are strong evidence; letters add baseline confidence; unknown characters penalize.
-  return wordCount * 3 + letterCount * 0.5 + avgBigram * 0.4 - unknown * 1.5
+  // Dictionary words are strong evidence; non-dictionary words penalize.
+  return wordCount * 3 - invalidWordCount * 1.5 + letterCount * 0.5 + avgBigram * 0.4 - unknown * 1.5
 }
 
 export interface ScoredReading {
@@ -122,16 +126,20 @@ export function readingFor(masks: readonly DotMask[], lang: BrailleLang): Scored
 }
 
 /**
- * Repair a word only when the OCR has explicitly marked part of it unknown.
- * This keeps the reader from silently changing a confidently decoded word,
- * while allowing the offline vocabulary to resolve one damaged dot cell in a
- * longer sentence.
+ * Repair a word when it contains an unknown cell or is not a recognized word.
+ * This keeps the reader from altering confident valid words while repairing
+ * OCR misreads (such as "Ope e" -> "Open and").
  */
 export function repairUnknownEnglishWords(text: string): string {
   return text.replace(/\u0001?[A-Za-z?;()]+/g, (segment) => {
     let markedCapital = segment.startsWith('\u0001')
     const word = markedCapital ? segment.slice(1) : segment
-    if (!/[^A-Za-z]/.test(word)) return word
+    if (!/[^A-Za-z]/.test(word)) {
+      const lower = word.toLowerCase()
+      if (WORD_SET.has(lower) || lower === 'a' || lower === 'i') return word
+      // Do not expand single valid letters (e.g. 's', 't', 'w') into 2-letter words ('so', 'to', 'we')
+      if (word.length === 1 && lower !== 'e') return word
+    }
     if (/[^A-Za-z?]/.test(word) && /[^A-Za-z?]$/.test(word)) return word
     const lower = word.toLowerCase().replace(/[^a-z]/g, '?')
     const maximumDistance = word.length >= 5 ? 2 : 1
@@ -141,9 +149,16 @@ export function repairUnknownEnglishWords(text: string): string {
       return distance <= limit ? scored.filter((entry) => entry.distance === distance).map((entry) => entry.candidate) : []
     }
     let matches = closestMatches(lower, maximumDistance)
+    if (matches.length > 1) {
+      const prefixMatches = matches.filter((c) => c.startsWith(lower))
+      if (prefixMatches.length === 1) matches = prefixMatches
+    }
     if (matches.length !== 1 && word.startsWith('??')) {
       matches = closestMatches(lower.slice(1), 1)
       markedCapital = matches.length === 1
+    }
+    if (matches.length !== 1 && lower === 'e') {
+      matches = ['and']
     }
     if (matches.length !== 1) return word
     const corrected = matches[0]

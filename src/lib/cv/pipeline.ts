@@ -7,7 +7,7 @@ import { detectDots } from './readerA'
 import { buildGrid } from './grid'
 import { readerBRead } from './readerB'
 import { runConsensus, autoOrient, type CellInput, type CellResult } from '../../domain/consensus'
-import { CONTROL, translateMasks, type BrailleLang } from '../../domain/tables'
+import { CONTROL, translateMasks, TABLES, type BrailleLang } from '../../domain/tables'
 import { mirrorMask, repairUnknownEnglishWords } from '../../domain/lang'
 import { type DotMask } from '../../domain/cell'
 
@@ -182,7 +182,7 @@ function fail(id: number, error: PipelineErrorCode, message: string): ScanFail {
 }
 
 /** Assemble text line-by-line so Braille lines become newline-separated. */
-function buildText(results: CellResult[], lang: BrailleLang): string {
+export function buildText(results: CellResult[], lang: BrailleLang): string {
   const lines: DotMask[][] = []
   let cur: DotMask[] = []
   let curRow = -1
@@ -197,62 +197,68 @@ function buildText(results: CellResult[], lang: BrailleLang): string {
   if (cur.length) lines.push(cur)
   return lines
     .map((masks) => {
-      // A lattice is intentionally reconstructed one cell beyond sparse dot
-      // evidence. At a cropped image edge that can create an empty cell which
-      // is not a real word space. Keep genuine internal spaces, but discard
-      // only these extrapolated edge cells before translating.
+      // A lattice is intentionally reconstructed beyond sparse dot evidence.
+      // At cropped image edges, that can create empty cells or stray noise cells.
+      // Keep genuine internal spaces and capital signs, but trim edge artifacts.
       let first = 0
       let last = masks.length
 
-      // Trim leading isolated characters (separated by 2 or more spaces)
-      let nextNonEmpty = first
-      while (nextNonEmpty < last && masks[nextNonEmpty] === 0) nextNonEmpty++
-      if (nextNonEmpty < last) {
-        if (nextNonEmpty + 1 < last && masks[nextNonEmpty + 1] === 0) {
-          let spaceCount = 0
-          let j = nextNonEmpty + 1
-          while (j < last && masks[j] === 0) {
-            spaceCount++
-            j++
-          }
-          if (spaceCount >= 2 && j < last) {
-            first = j
-          }
-        }
+      // Helper to check if a single character mask translates to a valid standalone English word ('a' or 'i')
+      const isValidStandaloneWord = (m: DotMask) => {
+        if (lang !== 'en') return true
+        const ch = TABLES.en.forward[m]
+        return ch === 'a' || ch === 'i'
       }
 
-      // Trim trailing isolated characters (separated by 2 or more spaces)
-      let prevNonEmpty = last - 1
-      while (prevNonEmpty >= first && masks[prevNonEmpty] === 0) prevNonEmpty--
-      if (prevNonEmpty >= first) {
-        if (prevNonEmpty - 1 >= first && masks[prevNonEmpty - 1] === 0) {
-          let spaceCount = 0
-          let j = prevNonEmpty - 1
-          while (j >= first && masks[j] === 0) {
-            spaceCount++
-            j--
-          }
-          if (spaceCount >= 2 && j >= first) {
-            last = j + 1
-          }
-        }
-      }
-      // Trim split-capital or leading single-dot specks followed by a capital sign
-      if (last - first >= 3 && masks[first + 1] === 0 && masks[first + 2] === CONTROL.CAPITAL_SIGN) {
-        const mask = masks[first]
-        if (mask !== 0 && (mask & (mask - 1)) === 0) {
-          first += 2
-        }
-      }
-
-      const hadLeadingEmpty = masks[first] === 0
+      // Trim leading empty cells
       while (first < last && masks[first] === 0) first++
-      if (hadLeadingEmpty && masks[first] === CONTROL.CAPITAL_SIGN) first++
-      if (last - first >= 2 && masks[last - 2] === 0) {
-        const mask = masks[last - 1]
-        if (mask !== 0 && (mask & (mask - 1)) === 0) last--
+
+      // Trim leading isolated single-character edge artifacts (separated by 1 or more spaces from main text)
+      while (last - first >= 2) {
+        const mask = masks[first]
+        if (mask === 0) {
+          first++
+          continue
+        }
+        // If followed by space (empty cell)
+        if (masks[first + 1] === 0) {
+          const isCapWithLetter = mask === CONTROL.CAPITAL_SIGN && first + 2 < last && masks[first + 2] !== 0
+          if (mask === CONTROL.CAPITAL_SIGN) {
+            if (!isCapWithLetter) {
+              first++
+              while (first < last && masks[first] === 0) first++
+              continue
+            }
+          } else if (!isValidStandaloneWord(mask)) {
+            first++
+            while (first < last && masks[first] === 0) first++
+            continue
+          }
+        }
+        break
       }
+
+      // Trim trailing empty cells
       while (last > first && masks[last - 1] === 0) last--
+
+      // Trim trailing isolated single-character edge artifacts (separated by 1 or more spaces from main text)
+      while (last - first >= 2) {
+        const mask = masks[last - 1]
+        if (mask === 0) {
+          last--
+          continue
+        }
+        // If preceded by space (empty cell), check if it's an edge artifact
+        if (masks[last - 2] === 0) {
+          if (mask === CONTROL.CAPITAL_SIGN || !isValidStandaloneWord(mask)) {
+            last--
+            while (last > first && masks[last - 1] === 0) last--
+            continue
+          }
+        }
+        break
+      }
+
       const translated = translateMasks(masks.slice(first, last), lang).text.replace(/[\s]+$/, '')
       return lang === 'en' ? repairUnknownEnglishWords(translated) : translated
     })

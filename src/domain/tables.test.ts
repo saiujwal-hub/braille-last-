@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CONTROL, ENGLISH_TABLE, TABLES, translateMasks, isKnownMask } from './tables'
+import { buildText } from '../lib/cv/pipeline'
+import { repairUnknownEnglishWords } from './lang'
 import { maskFromDots, dotsFromMask } from './cell'
 
 describe('braille cell math', () => {
@@ -43,14 +45,49 @@ describe('translation', () => {
     expect(translateMasks(masks, 'en').text).toBe('10')
   })
 
-  it('handles capital signs', () => {
-    const masks = [CONTROL.CAPITAL_SIGN, ENGLISH_TABLE.reverse['c'], ENGLISH_TABLE.reverse['a']]
-    expect(translateMasks(masks, 'en').text).toBe('Ca')
+  it('handles capital signs for multi-word phrases like List View', () => {
+    const masks = [
+      CONTROL.CAPITAL_SIGN, ENGLISH_TABLE.reverse['l'], ENGLISH_TABLE.reverse['i'], ENGLISH_TABLE.reverse['s'], ENGLISH_TABLE.reverse['t'],
+      0,
+      CONTROL.CAPITAL_SIGN, ENGLISH_TABLE.reverse['v'], ENGLISH_TABLE.reverse['i'], ENGLISH_TABLE.reverse['e'], ENGLISH_TABLE.reverse['w'],
+    ]
+    expect(translateMasks(masks, 'en').text).toBe('List View')
   })
 
   it('Bharati Hindi round-trips a known letter', () => {
     const t = TABLES['hi']
     expect(t.reverse['क']).toBeDefined()
     expect(t.forward[t.reverse['क']]).toBe('क')
+  })
+})
+
+describe('buildText edge cleaning', () => {
+  it('correctly cleans edge noise cell while preserving capital signs in List View', () => {
+    const masks = [
+      0, // leading empty cell from grid lattice
+      CONTROL.CAPITAL_SIGN, ENGLISH_TABLE.reverse['l'], ENGLISH_TABLE.reverse['i'], ENGLISH_TABLE.reverse['s'], ENGLISH_TABLE.reverse['t'],
+      0,
+      CONTROL.CAPITAL_SIGN, ENGLISH_TABLE.reverse['v'], ENGLISH_TABLE.reverse['i'], ENGLISH_TABLE.reverse['e'], ENGLISH_TABLE.reverse['w'],
+      0,
+      ENGLISH_TABLE.reverse['g'], // trailing edge noise artifact cell
+    ]
+    const results = masks.map((mask, col) => ({
+      row: 0,
+      col,
+      box: { x: 0, y: 0, w: 10, h: 10 },
+      mask,
+      status: 'high' as const,
+      confidence: 1,
+      readerA: mask,
+      readerB: mask,
+      char: '?',
+      alternatives: [],
+      invented: false,
+    }))
+    expect(buildText(results, 'en')).toBe('List View')
+  })
+
+  it('repairs OCR misreads like Ope e pinned programs to Open and pinned programs', () => {
+    expect(repairUnknownEnglishWords('Ope e pinned programs')).toBe('Open and pinned programs')
   })
 })
