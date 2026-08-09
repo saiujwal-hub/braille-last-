@@ -271,7 +271,7 @@ export function buildGridAtAngle(dots: Dot[], g: number, rad: number): Grid | nu
     for (let i = 0; i < cols.length; i++) {
       const c = cols[i]
       const next = cols[i + 1]
-      if (next && next.center - c.center < 1.25 * g) {
+      if (next && next.center - c.center < 1.38 * g) {
         colCells.push({ left: c, right: next, start: c.center })
         i++
       } else {
@@ -352,7 +352,7 @@ export function buildGridAtAngle(dots: Dot[], g: number, rad: number): Grid | nu
       currentLine.push(rows[i])
     } else {
       const gap = rows[i].center - currentLine[currentLine.length - 1].center
-      if (gap > 1.5 * g || currentLine.length >= 3) {
+      if (gap > 2.3 * g || currentLine.length >= 3) {
         lines.push(currentLine)
         currentLine = [rows[i]]
       } else {
