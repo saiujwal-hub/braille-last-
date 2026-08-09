@@ -203,12 +203,43 @@ function buildText(results: CellResult[], lang: BrailleLang): string {
       // only these extrapolated edge cells before translating.
       let first = 0
       let last = masks.length
+
+      // Trim leading isolated characters (separated by 2 or more spaces)
+      let nextNonEmpty = first
+      while (nextNonEmpty < last && masks[nextNonEmpty] === 0) nextNonEmpty++
+      if (nextNonEmpty < last) {
+        if (nextNonEmpty + 1 < last && masks[nextNonEmpty + 1] === 0) {
+          let spaceCount = 0
+          let j = nextNonEmpty + 1
+          while (j < last && masks[j] === 0) {
+            spaceCount++
+            j++
+          }
+          if (spaceCount >= 2 && j < last) {
+            first = j
+          }
+        }
+      }
+
+      // Trim trailing isolated characters (separated by 2 or more spaces)
+      let prevNonEmpty = last - 1
+      while (prevNonEmpty >= first && masks[prevNonEmpty] === 0) prevNonEmpty--
+      if (prevNonEmpty >= first) {
+        if (prevNonEmpty - 1 >= first && masks[prevNonEmpty - 1] === 0) {
+          let spaceCount = 0
+          let j = prevNonEmpty - 1
+          while (j >= first && masks[j] === 0) {
+            spaceCount++
+            j--
+          }
+          if (spaceCount >= 2 && j >= first) {
+            last = j + 1
+          }
+        }
+      }
+
       const hadLeadingEmpty = masks[first] === 0
       while (first < last && masks[first] === 0) first++
-      // A cropped fragment can leave one isolated dot-6 cell before the
-      // actual word. It looks like a capital sign, but is not attached to the
-      // word when an extrapolated empty cell precedes it. Ignore only that
-      // edge artefact; a genuine capital sign at the beginning is preserved.
       if (hadLeadingEmpty && masks[first] === CONTROL.CAPITAL_SIGN) first++
       if (last - first >= 2 && masks[last - 2] === 0) {
         const mask = masks[last - 1]
