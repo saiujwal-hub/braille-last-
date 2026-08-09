@@ -237,6 +237,13 @@ function buildText(results: CellResult[], lang: BrailleLang): string {
           }
         }
       }
+      // Trim split-capital or leading single-dot specks followed by a capital sign
+      if (last - first >= 3 && masks[first + 1] === 0 && masks[first + 2] === CONTROL.CAPITAL_SIGN) {
+        const mask = masks[first]
+        if (mask !== 0 && (mask & (mask - 1)) === 0) {
+          first += 2
+        }
+      }
 
       const hadLeadingEmpty = masks[first] === 0
       while (first < last && masks[first] === 0) first++
