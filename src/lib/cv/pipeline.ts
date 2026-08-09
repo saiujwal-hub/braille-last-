@@ -203,11 +203,11 @@ export function buildText(results: CellResult[], lang: BrailleLang): string {
       let first = 0
       let last = masks.length
 
-      // Helper to check if a single character mask translates to a valid standalone English word ('a' or 'i')
+      // Helper to check if a single character mask translates to a valid standalone English word ('a', 'i', or any single letter/character like 'o')
       const isValidStandaloneWord = (m: DotMask) => {
         if (lang !== 'en') return true
         const ch = TABLES.en.forward[m]
-        return ch === 'a' || ch === 'i'
+        return ch !== undefined && /^[a-z]$/i.test(ch)
       }
 
       // Trim leading empty cells

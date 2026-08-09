@@ -50,8 +50,8 @@ const DOLCH_WORDS = [
   'laptop','line','link','list','lists','menu','mode','notepad','notification','notifications',
   'nvda','open','opened','page','phone','pin','pinned','program','programs','reader','replace',
   'scan','screen','search','searched','searching','settings','show','tab','talk','taskbar',
-  'text','toolbar','tray','type','types','url','view','views','webpage','website','window',
-  'windows','world',
+  'text','toolbar','tray','type','types','typing','url','view','views','webpage','website','window',
+  'windows','world','insert','inserting',
 ] as const
 
 /** Words that should always appear capitalised when auto-repaired (brand names, etc.). */
@@ -163,6 +163,9 @@ export function repairUnknownEnglishWords(text: string): string {
 
   // Step 3: Trim a trailing isolated 'a' or 'i' that could not be merged.
   repaired = repaired.replace(/\s[ai]$/i, '')
+
+  // Step 3.5: Replace punctuation like , . : ; in the middle of a word (OCR errors) with '?'
+  repaired = repaired.replace(/([A-Za-z?])[,.:;]([A-Za-z?])/g, '$1?$2')
 
   const fuzzyMatch = (lower: string): string[] => {
     const maxDist = lower.length >= 6 ? 3 : lower.length >= 4 ? 2 : 1

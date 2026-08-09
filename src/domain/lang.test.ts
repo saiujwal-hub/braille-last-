@@ -35,4 +35,8 @@ describe('offline sentence repair', () => {
     expect(repairUnknownEnglishWords('start button, seaoch and talk to ??ertana button'))
       .toBe('start button, search and talk to Cortana button')
   })
+
+  it('repairs words with internal punctuation errors and dictionary UI words', () => {
+    expect(repairUnknownEnglishWords('after in?,rtibd')).toBe('after inserting')
+  })
 })
