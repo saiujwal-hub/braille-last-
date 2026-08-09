@@ -44,7 +44,7 @@ const DOLCH_WORDS = [
   // Common assistive-technology, desktop, and UI terms. Including these lets
   // the offline consensus reader resolve single-dot disagreements in real words
   // without needing a network language model.
-  'app','apps','behavior','behaviour','braille','button','chrome','close','closed','common','cursor','desktop','file','files','folder','folders','grid','home','icon','icons','jaws','keyboard','laptop','line','list','lists','menu','mode','notepad','nvda','open','opened','page','phone','pin','pinned','program','programs','reader','scan','screen','search','searched','searching','settings','show','start','taskbar','text','type','types','view','views','window','windows',
+  'app','apps','area','behavior','behaviour','braille','button','chrome','close','closed','common','cursor','desktop','file','files','folder','folders','grid','home','icon','icons','jaws','keyboard','laptop','line','list','lists','menu','mode','notepad','notification','notifications','nvda','open','opened','page','phone','pin','pinned','program','programs','reader','scan','screen','search','searched','searching','settings','show','start','taskbar','text','toolbar','tray','type','types','view','views','window','windows',
 ] as const
 
 const WORD_SET = new Set<string>(DOLCH_WORDS)
@@ -131,14 +131,28 @@ export function readingFor(masks: readonly DotMask[], lang: BrailleLang): Scored
  * OCR misreads (such as "Ope e" -> "Open and").
  */
 export function repairUnknownEnglishWords(text: string): string {
+  // Step 1: Strip a leading apostrophe (misread capital sign) before the first letter.
   let repaired = text.replace(/(?:^|\s)'([a-z])/ig, (match, letter) => {
     const prefix = match.startsWith(' ') ? ' ' : ''
     return prefix + letter.toUpperCase()
   })
 
-  if (/\s[ai]$/i.test(repaired)) {
-    repaired = repaired.replace(/\s[ai]$/i, '')
-  }
+  // Step 2: Merge "word a" or "word i" pairs into a known combined word,
+  // but ONLY when the a/i is the very last token on its line.
+  // e.g. "Notification are a" -> "Notification area"
+  // The grid reconstruction can insert a spurious space inside a word when a
+  // cell boundary falls at the image edge.
+  repaired = repaired.replace(/\b([A-Za-z]{2,})\s([ai])(\n|$)/gi, (match, w1, w2, tail) => {
+    const combined = (w1 + w2).toLowerCase()
+    if (WORD_SET.has(combined)) {
+      const cap = w1[0] >= 'A' && w1[0] <= 'Z'
+      return (cap ? combined[0].toUpperCase() + combined.slice(1) : combined) + tail
+    }
+    return match
+  })
+
+  // Step 3: Trim a trailing isolated 'a' or 'i' that could not be merged (edge artifact).
+  repaired = repaired.replace(/\s[ai]$/i, '')
 
   return repaired.replace(/\u0001?[A-Za-z?;()]+/g, (segment) => {
     let markedCapital = segment.startsWith('\u0001')
