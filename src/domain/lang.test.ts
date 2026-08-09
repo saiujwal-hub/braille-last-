@@ -109,6 +109,11 @@ describe('offline sentence repair', () => {
     expect(repairUnknownEnglishWords('Eur?')).toBe('Euro')
   })
 
+  it('preserves and repairs Caret symbol terms', () => {
+    expect(repairUnknownEnglishWords('Caret symbol')).toBe('Caret symbol')
+    expect(repairUnknownEnglishWords('Care? symbol')).toBe('Caret symbol')
+  })
+
   it('splits invalid apostrophe-merged words', () => {
     expect(repairUnknownEnglishWords("again'enter")).toBe('again enter')
     expect(repairUnknownEnglishWords("don't they're")).toBe("don't they're")

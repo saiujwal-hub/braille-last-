@@ -44,10 +44,10 @@ const DOLCH_WORDS = [
   // Common assistive-technology, desktop, and UI terms. Including these lets
   // the offline consensus reader resolve single-dot disagreements in real words
   // without needing a network language model.
-  'accent','accents','app','apps','area','asterisk','backspace','backspaces','backslash','bar','bars','behavior','behaviour','bracket','brackets','braille','browser','button','buttons',
+  'accent','accents','ampersand','app','apps','area','asterisk','asterisks','backspace','backspaces','backslash','bar','bars','behavior','behaviour','brace','braces','bracket','brackets','braille','browser','button','buttons','caret','carets','character','characters',
   '0','1','2','3','4','5','6','7','8','9',
   'chrome','close','closed','colon','comma','common','cortana','cursor','dash','delete','deleted','deleting','desktop','dialog','dialogue','dollar','dollars','cent','cents','currency','money','cash','coin','coins','amount','price','cost','total','double',
-  'equals','file','files','folder','folders','grave','grid','hello','hyphen','icon','icons','jaws','keyboard',
+  'equals','file','files','folder','folders','glyph','glyphs','grave','grid','hello','hyphen','icon','icons','jaws','keyboard',
   'laptop','line','link','list','lists','menu','minus','mode','notepad','notification','notifications',
   'nvda','open','opened','page','parenthesis','parentheses','period','phone','pin','pinned','plus','program','programs','quote','quotes','reader','replace',
   'scan','screen','search','searched','searching','settings','show','single','slash','special','symbol','symbols','tab','talk','taskbar',
@@ -62,9 +62,9 @@ const DOLCH_WORDS = [
 const PROPER_NOUNS = new Set(['cortana', 'chrome', 'jaws', 'nvda', 'braille', 'windows'])
 
 const UI_TERMS = new Set<string>([
-  'accent','accents','app','apps','area','asterisk','backspace','backspaces','backslash','bar','bars','behavior','behaviour','bracket','brackets','braille','browser','button','buttons',
+  'accent','accents','ampersand','app','apps','area','asterisk','asterisks','backspace','backspaces','backslash','bar','bars','behavior','behaviour','brace','braces','bracket','brackets','braille','browser','button','buttons','caret','carets','character','characters',
   'chrome','close','closed','colon','comma','common','cortana','cursor','dash','delete','deleted','deleting','desktop','dialog','dialogue','dollar','dollars','cent','cents','currency','money','cash','coin','coins','amount','price','cost','total','double',
-  'equals','file','files','folder','folders','grave','grid','hello','hyphen','icon','icons','jaws','keyboard',
+  'equals','file','files','folder','folders','glyph','glyphs','grave','grid','hello','hyphen','icon','icons','jaws','keyboard',
   'laptop','line','link','list','lists','menu','minus','mode','notepad','notification','notifications',
   'nvda','open','opened','page','parenthesis','parentheses','period','phone','pin','pinned','plus','program','programs','quote','quotes','reader','replace',
   'scan','screen','search','searched','searching','settings','show','single','slash','special','symbol','symbols','tab','talk','taskbar',
