@@ -55,6 +55,7 @@ const DOLCH_WORDS = [
   'windows','world','insert','inserting','arrow','arrows','left','right','up','down','key','keys',
   'use','uses','using','used','press','pressing','pressed','select','selecting','selection',
   'selected','enter','space','escape','control','shift','alt',
+  'rupee','rupees','rs','inr','paisa','paise','pound','pounds','euro','euros','yen','yuan',
 ] as const
 
 /** Words that should always appear capitalised when auto-repaired (brand names, etc.). */
@@ -70,7 +71,8 @@ const UI_TERMS = new Set<string>([
   'text','tilde','toolbar','tray','type','types','typing','underscore','url','vertical','view','views','webpage','website','window',
   'windows','world','insert','inserting','arrow','arrows','left','right','up','down','key','keys',
   'use','uses','using','used','press','pressing','pressed','select','selecting','selection',
-  'selected','enter','space','escape','control','shift','alt'
+  'selected','enter','space','escape','control','shift','alt',
+  'rupee','rupees','rs','inr','paisa','paise','pound','pounds','euro','euros','yen','yuan',
 ])
 
 

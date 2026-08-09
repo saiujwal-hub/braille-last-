@@ -99,6 +99,11 @@ describe('offline sentence repair', () => {
     expect(repairUnknownEnglishWords('Dolla?')).toBe('Dollar')
   })
 
+  it('preserves and repairs Rupee currency terms', () => {
+    expect(repairUnknownEnglishWords('Rupee')).toBe('Rupee')
+    expect(repairUnknownEnglishWords('Rupe?')).toBe('Rupee')
+  })
+
   it('splits invalid apostrophe-merged words', () => {
     expect(repairUnknownEnglishWords("again'enter")).toBe('again enter')
     expect(repairUnknownEnglishWords("don't they're")).toBe("don't they're")
