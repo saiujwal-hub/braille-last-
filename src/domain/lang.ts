@@ -44,10 +44,10 @@ const DOLCH_WORDS = [
   // Common assistive-technology, desktop, and UI terms. Including these lets
   // the offline consensus reader resolve single-dot disagreements in real words
   // without needing a network language model.
-  'app','apps','area','backspace','backspaces','behavior','behaviour','braille','browser','button','buttons',
+  'accent','accents','app','apps','area','backspace','backspaces','behavior','behaviour','braille','browser','button','buttons',
   '0','1','2','3','4','5','6','7','8','9',
   'chrome','close','closed','common','cortana','cursor','delete','deleted','deleting','desktop','dialog','dialogue',
-  'file','files','folder','folders','grid','hello','icon','icons','jaws','keyboard',
+  'file','files','folder','folders','grave','grid','hello','icon','icons','jaws','keyboard',
   'laptop','line','link','list','lists','menu','mode','notepad','notification','notifications',
   'nvda','open','opened','page','phone','pin','pinned','program','programs','reader','replace',
   'scan','screen','search','searched','searching','settings','show','tab','talk','taskbar',
@@ -61,9 +61,9 @@ const DOLCH_WORDS = [
 const PROPER_NOUNS = new Set(['cortana', 'chrome', 'jaws', 'nvda', 'braille', 'windows'])
 
 const UI_TERMS = new Set<string>([
-  'app','apps','area','backspace','backspaces','behavior','behaviour','braille','browser','button','buttons',
+  'accent','accents','app','apps','area','backspace','backspaces','behavior','behaviour','braille','browser','button','buttons',
   'chrome','close','closed','common','cortana','cursor','delete','deleted','deleting','desktop','dialog','dialogue',
-  'file','files','folder','folders','grid','hello','icon','icons','jaws','keyboard',
+  'file','files','folder','folders','grave','grid','hello','icon','icons','jaws','keyboard',
   'laptop','line','link','list','lists','menu','mode','notepad','notification','notifications',
   'nvda','open','opened','page','phone','pin','pinned','program','programs','reader','replace',
   'scan','screen','search','searched','searching','settings','show','tab','talk','taskbar',

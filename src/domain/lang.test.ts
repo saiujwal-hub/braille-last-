@@ -115,4 +115,8 @@ describe('offline sentence repair', () => {
     // Should prefer the shifted-up version (translates to ":1") over the shifted-down "?,"
     expect(result.text).toContain('1')
   })
+
+  it('repairs grave accent UI terms', () => {
+    expect(repairUnknownEnglishWords('Grave accen')).toBe('Grave accent')
+  })
 })
