@@ -44,7 +44,7 @@ const DOLCH_WORDS = [
   // Common assistive-technology and classroom terms. Including these lets the
   // offline consensus reader resolve a one-dot disagreement in real words
   // without needing a network language model.
-  'braille','chrome','common','cursor','behavior','behaviour','icon','icons','jaws','keyboard','laptop','menu','notepad','nvda','phone','reader','screen','taskbar',
+  'braille','chrome','common','cursor','behavior','behaviour','icon','icons','jaws','keyboard','laptop','list','lists','menu','notepad','nvda','phone','reader','screen','taskbar','view','views',
 ] as const
 
 const WORD_SET = new Set<string>(DOLCH_WORDS)
