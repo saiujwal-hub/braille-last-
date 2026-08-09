@@ -127,4 +127,9 @@ describe('offline sentence repair', () => {
   it('repairs special symbols UI terms', () => {
     expect(repairUnknownEnglishWords('specail symbol')).toBe('special symbol')
   })
+
+  it('repairs double quote UI terms', () => {
+    expect(repairUnknownEnglishWords('doubl quote')).toBe('double quote')
+    expect(repairUnknownEnglishWords('Double quot')).toBe('Double quote')
+  })
 })

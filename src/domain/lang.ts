@@ -44,14 +44,14 @@ const DOLCH_WORDS = [
   // Common assistive-technology, desktop, and UI terms. Including these lets
   // the offline consensus reader resolve single-dot disagreements in real words
   // without needing a network language model.
-  'accent','accents','app','apps','area','backspace','backspaces','bar','bars','behavior','behaviour','braille','browser','button','buttons',
+  'accent','accents','app','apps','area','asterisk','backspace','backspaces','backslash','bar','bars','behavior','behaviour','bracket','brackets','braille','browser','button','buttons',
   '0','1','2','3','4','5','6','7','8','9',
-  'chrome','close','closed','common','cortana','cursor','delete','deleted','deleting','desktop','dialog','dialogue',
-  'file','files','folder','folders','grave','grid','hello','icon','icons','jaws','keyboard',
-  'laptop','line','link','list','lists','menu','mode','notepad','notification','notifications',
-  'nvda','open','opened','page','phone','pin','pinned','program','programs','reader','replace',
-  'scan','screen','search','searched','searching','settings','show','special','symbol','symbols','tab','talk','taskbar',
-  'text','toolbar','tray','type','types','typing','url','vertical','view','views','webpage','website','window',
+  'chrome','close','closed','colon','comma','common','cortana','cursor','dash','delete','deleted','deleting','desktop','dialog','dialogue','double',
+  'equals','file','files','folder','folders','grave','grid','hello','hyphen','icon','icons','jaws','keyboard',
+  'laptop','line','link','list','lists','menu','minus','mode','notepad','notification','notifications',
+  'nvda','open','opened','page','parenthesis','parentheses','period','phone','pin','pinned','plus','program','programs','quote','quotes','reader','replace',
+  'scan','screen','search','searched','searching','settings','show','single','slash','special','symbol','symbols','tab','talk','taskbar',
+  'text','tilde','toolbar','tray','type','types','typing','underscore','url','vertical','view','views','webpage','website','window',
   'windows','world','insert','inserting','arrow','arrows','left','right','up','down','key','keys',
   'use','uses','using','used','press','pressing','pressed','select','selecting','selection',
   'selected','enter','space','escape','control','shift','alt',
@@ -61,13 +61,13 @@ const DOLCH_WORDS = [
 const PROPER_NOUNS = new Set(['cortana', 'chrome', 'jaws', 'nvda', 'braille', 'windows'])
 
 const UI_TERMS = new Set<string>([
-  'accent','accents','app','apps','area','backspace','backspaces','bar','bars','behavior','behaviour','braille','browser','button','buttons',
-  'chrome','close','closed','common','cortana','cursor','delete','deleted','deleting','desktop','dialog','dialogue',
-  'file','files','folder','folders','grave','grid','hello','icon','icons','jaws','keyboard',
-  'laptop','line','link','list','lists','menu','mode','notepad','notification','notifications',
-  'nvda','open','opened','page','phone','pin','pinned','program','programs','reader','replace',
-  'scan','screen','search','searched','searching','settings','show','special','symbol','symbols','tab','talk','taskbar',
-  'text','toolbar','tray','type','types','typing','url','vertical','view','views','webpage','website','window',
+  'accent','accents','app','apps','area','asterisk','backspace','backspaces','backslash','bar','bars','behavior','behaviour','bracket','brackets','braille','browser','button','buttons',
+  'chrome','close','closed','colon','comma','common','cortana','cursor','dash','delete','deleted','deleting','desktop','dialog','dialogue','double',
+  'equals','file','files','folder','folders','grave','grid','hello','hyphen','icon','icons','jaws','keyboard',
+  'laptop','line','link','list','lists','menu','minus','mode','notepad','notification','notifications',
+  'nvda','open','opened','page','parenthesis','parentheses','period','phone','pin','pinned','plus','program','programs','quote','quotes','reader','replace',
+  'scan','screen','search','searched','searching','settings','show','single','slash','special','symbol','symbols','tab','talk','taskbar',
+  'text','tilde','toolbar','tray','type','types','typing','underscore','url','vertical','view','views','webpage','website','window',
   'windows','world','insert','inserting','arrow','arrows','left','right','up','down','key','keys',
   'use','uses','using','used','press','pressing','pressed','select','selecting','selection',
   'selected','enter','space','escape','control','shift','alt'
