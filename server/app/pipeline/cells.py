@@ -23,6 +23,7 @@ log = get_logger("app.pipeline.cells")
 
 def _dot_centroids(binary: np.ndarray, min_area: int = 4, max_area: int = 900) -> list[tuple[float, float]]:
     """Centroids of dark connected components that look like dots."""
+    h_img, w_img = binary.shape
     n, labels, stats, _ = cv2.connectedComponentsWithStats(255 - binary, connectivity=8)
     out: list[tuple[float, float]] = []
     for i in range(1, n):
@@ -33,11 +34,14 @@ def _dot_centroids(binary: np.ndarray, min_area: int = 4, max_area: int = 900) -
         y = int(stats[i, cv2.CC_STAT_TOP])
         w = int(stats[i, cv2.CC_STAT_WIDTH])
         h = int(stats[i, cv2.CC_STAT_HEIGHT])
+        # Ignore blobs in the top 5% or bottom 8% of the image to filter out paper edges and camera watermarks
+        cy = y + h / 2.0
+        if cy < h_img * 0.05 or cy > h_img * 0.92:
+            continue
         # Dot shape check: roughly round.
         if w > 3 * h or h > 3 * w:
             continue
         cx = x + w / 2.0
-        cy = y + h / 2.0
         out.append((cx, cy))
     return out
 
