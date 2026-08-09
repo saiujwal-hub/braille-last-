@@ -44,7 +44,7 @@ const DOLCH_WORDS = [
   // Common assistive-technology, desktop, and UI terms. Including these lets
   // the offline consensus reader resolve single-dot disagreements in real words
   // without needing a network language model.
-  'app','apps','area','behavior','behaviour','braille','browser','button','buttons',
+  'app','apps','area','backspace','backspaces','behavior','behaviour','braille','browser','button','buttons',
   'chrome','close','closed','common','cortana','cursor','desktop','dialog','dialogue',
   'file','files','folder','folders','grid','hello','icon','icons','jaws','keyboard',
   'laptop','line','link','list','lists','menu','mode','notepad','notification','notifications',
@@ -58,6 +58,19 @@ const DOLCH_WORDS = [
 
 /** Words that should always appear capitalised when auto-repaired (brand names, etc.). */
 const PROPER_NOUNS = new Set(['cortana', 'chrome', 'jaws', 'nvda', 'braille', 'windows'])
+
+const UI_TERMS = new Set<string>([
+  'app','apps','area','backspace','backspaces','behavior','behaviour','braille','browser','button','buttons',
+  'chrome','close','closed','common','cortana','cursor','desktop','dialog','dialogue',
+  'file','files','folder','folders','grid','hello','icon','icons','jaws','keyboard',
+  'laptop','line','link','list','lists','menu','mode','notepad','notification','notifications',
+  'nvda','open','opened','page','phone','pin','pinned','program','programs','reader','replace',
+  'scan','screen','search','searched','searching','settings','show','tab','talk','taskbar',
+  'text','toolbar','tray','type','types','typing','url','view','views','webpage','website','window',
+  'windows','world','insert','inserting','arrow','arrows','left','right','up','down','key','keys',
+  'use','uses','using','used','press','pressing','pressed','select','selecting','selection',
+  'selected','enter','space','escape','control','shift','alt'
+])
 
 
 const WORD_SET = new Set<string>(DOLCH_WORDS)
@@ -130,8 +143,46 @@ export interface ScoredReading {
  * including number/caps state).
  */
 export function readingFor(masks: readonly DotMask[], lang: BrailleLang): ScoredReading {
-  const { text, cells } = translateMasks(masks, lang)
-  return { text, cells, score: scoreEnglishSequence(text) }
+  const getScored = (m: readonly DotMask[]) => {
+    const { text, cells } = translateMasks(m, lang)
+    const repairedText = lang === 'en' ? repairUnknownEnglishWords(text) : text
+    return { text: repairedText, cells, score: scoreEnglishSequence(repairedText) }
+  }
+
+  const original = getScored(masks)
+
+  // Try shifting masks up (fixes grid shifted down by 1 row)
+  const shiftedUpMasks = masks.map((m) => {
+    let shifted = 0
+    if (m & (1 << 1)) shifted |= 1 << 0 // dot 2 -> dot 1
+    if (m & (1 << 2)) shifted |= 1 << 1 // dot 3 -> dot 2
+    if (m & (1 << 4)) shifted |= 1 << 3 // dot 5 -> dot 4
+    if (m & (1 << 5)) shifted |= 1 << 4 // dot 6 -> dot 5
+    return shifted
+  })
+  const shiftedUp = getScored(shiftedUpMasks)
+
+  // Try shifting masks down (fixes grid shifted up by 1 row)
+  const shiftedDownMasks = masks.map((m) => {
+    let shifted = 0
+    if (m & (1 << 0)) shifted |= 1 << 1 // dot 1 -> dot 2
+    if (m & (1 << 1)) shifted |= 1 << 2 // dot 2 -> dot 3
+    if (m & (1 << 3)) shifted |= 1 << 4 // dot 4 -> dot 5
+    if (m & (1 << 4)) shifted |= 1 << 5 // dot 5 -> dot 6
+    return shifted
+  })
+  const shiftedDown = getScored(shiftedDownMasks)
+
+  let best = original
+
+  if (shiftedUp.score > best.score && shiftedUp.score > 0) {
+    best = shiftedUp
+  }
+  if (shiftedDown.score > best.score && shiftedDown.score > 0) {
+    best = shiftedDown
+  }
+
+  return best
 }
 
 /**
@@ -170,7 +221,7 @@ export function repairUnknownEnglishWords(text: string): string {
   repaired = repaired.replace(/([A-Za-z?])[,.:;]([A-Za-z?])/g, '$1?$2')
 
   const fuzzyMatch = (lower: string): string[] => {
-    const maxDist = lower.length >= 6 ? 3 : lower.length >= 4 ? 2 : 1
+    const maxDist = lower.length >= 5 ? 3 : lower.length >= 4 ? 2 : 1
     const scored = [...WORD_SET].map((c) => ({ c, d: editDistance(lower, c) }))
     const minDist = Math.min(...scored.map((e) => e.d))
     return minDist <= maxDist ? scored.filter((e) => e.d === minDist).map((e) => e.c) : []
@@ -183,7 +234,7 @@ export function repairUnknownEnglishWords(text: string): string {
 
   // Step 4a: Per-token fuzzy repair.
   // Short (≤ 2 char) unknown fragments are preserved for the merge pass (step 4b).
-  let result = repaired.replace(/\u0001?[A-Za-z?;()]+/g, (segment) => {
+  let result = repaired.replace(/\u0001?[A-Za-z?;()]+/g, (segment, offset) => {
     let markedCapital = segment.startsWith('\u0001')
     const word = markedCapital ? segment.slice(1) : segment
     if (!/[^A-Za-z]/.test(word)) {
@@ -204,6 +255,27 @@ export function repairUnknownEnglishWords(text: string): string {
     if (matches.length > 1) {
       const prefixMatches = matches.filter((c) => c.startsWith(lower.replace(/\?/g, '')))
       if (prefixMatches.length === 1) matches = prefixMatches
+    }
+    // Bigram context tiebreaker: score each candidate sentence using the language model
+    if (matches.length > 1) {
+      let bestCandidate = matches[0]
+      let bestCandidateScore = -Infinity
+      for (const cand of matches) {
+        const candidateWord = applyCorrection(cand, word, markedCapital)
+        const candidateSentence = repaired.slice(0, offset) + candidateWord + repaired.slice(offset + segment.length)
+        let score = scoreEnglishSequence(candidateSentence)
+        // Normalize for word length differences to avoid penalizing shorter words
+        score -= candidateWord.length * 0.5
+        // Boost scoring for relevant UI terms in this application's domain
+        if (UI_TERMS.has(cand.toLowerCase())) {
+          score += 1.0
+        }
+        if (score > bestCandidateScore) {
+          bestCandidateScore = score
+          bestCandidate = cand
+        }
+      }
+      matches = [bestCandidate]
     }
     if (matches.length !== 1 && word.startsWith('??')) {
       matches = fuzzyMatch(lower.slice(1))
